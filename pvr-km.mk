@@ -19,6 +19,8 @@
 # make and PATH that vendor/lineage/build/tasks/kernel.mk hands the kernel
 # build; those variables are expanded when the recipe runs, after
 # kernel.mk has been read.
+# modpost only warns about an import nothing exports, and the kernel then
+# refuses to load the module, so the recipe fails on any such import.
 
 ifneq ($(TARGET_KERNEL_SOURCE),)
 
@@ -42,6 +44,16 @@ $(PVR_KM_PVRSRVKM): $(PVR_KM_KERNEL_OUT)/arch/arm/boot/$(BOARD_KERNEL_IMAGE_NAME
 		HOST_CC=$(CLANG_PREBUILTS)/bin/clang HOST_CXX=$(CLANG_PREBUILTS)/bin/clang++ \
 		BUILD=release PLATFORM_RELEASE=$(PLATFORM_VERSION)
 	$(hide) $(KERNEL_TOOLCHAIN_PATH)strip --strip-unneeded $(PVR_KM_PVRSRVKM) $(PVR_KM_OMAPLFB)
+	$(hide) cat $(PVR_KM_KERNEL_OUT)/Module.symvers $(PVR_KM_OUT)/target/kbuild/Module.symvers \
+		| awk '{ print $$2 }' | sort -u > $(PVR_KM_OUT)/exported.txt
+	$(hide) for ko in $(PVR_KM_PVRSRVKM) $(PVR_KM_OMAPLFB); do \
+		missing=$$($(KERNEL_TOOLCHAIN_PATH)nm -u $$ko | awk '{ print $$2 }' | sort -u \
+			| comm -23 - $(PVR_KM_OUT)/exported.txt); \
+		if [ -n "$$missing" ]; then \
+			echo "$$ko imports symbols no kernel or module exports:" $$missing >&2; \
+			exit 1; \
+		fi; \
+	done
 
 $(PVR_KM_OMAPLFB): $(PVR_KM_PVRSRVKM)
 	$(hide) test -s $@

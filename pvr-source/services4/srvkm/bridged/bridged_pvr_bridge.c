@@ -90,11 +90,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
 #include <linux/file.h>
-/* O_CLOEXEC for get_unused_fd_flags(), which older kernels provide as a
- * macro in <linux/file.h>. */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
-#include <linux/fcntl.h>
-#endif
+#include "pvr_fd.h"
 #include <linux/version.h>
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
 #include <linux/sync.h>
@@ -3047,12 +3043,7 @@ PVRSRVSwapToDCBuffer2BW(IMG_UINT32 ui32BridgeID,
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
 	int iReleaseFd;
-	/* get_unused_fd_flags() is a macro before 3.7 and a function after. */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
-	iReleaseFd = get_unused_fd_flags(O_CLOEXEC);
-#else
-	iReleaseFd = get_unused_fd();
-#endif
+	iReleaseFd = PVRGetUnusedFdCloexec();
 	if(iReleaseFd < 0)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to find unused fd (%d)",
