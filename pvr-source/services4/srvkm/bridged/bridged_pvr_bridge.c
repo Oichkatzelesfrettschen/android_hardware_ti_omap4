@@ -89,10 +89,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+#include <linux/file.h>
+/* O_CLOEXEC for get_unused_fd_flags(), which older kernels provide as a
+ * macro in <linux/file.h>. */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
 #include <linux/fcntl.h>
 #endif
-#include <linux/file.h>
 #include <linux/version.h>
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
 #include <linux/sync.h>
