@@ -46,5 +46,6 @@ PRODUCT_PACKAGES += \
 
 # pvr-related objects
 PRODUCT_PACKAGES += \
+    omaplfb.ko \
     pvrsrvinit \
-    libPVRScopeServices.so
+    pvrsrvkm.ko

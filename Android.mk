@@ -37,6 +37,8 @@ BUILD_HEAPTRACKED_EXECUTABLE:= $(BUILD_EXECUTABLE)
 endif
 
 include $(call first-makefiles-under,$(LOCAL_PATH))
+
+include $(HARDWARE_TI_OMAP4_BASE)/pvr-km.mk
 else
 LOCAL_PATH:= $(call my-dir)
 
