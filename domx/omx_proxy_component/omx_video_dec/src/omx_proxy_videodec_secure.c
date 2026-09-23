@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #define COMPONENT_NAME "OMX.TI.DUCATI1.VIDEO.DECODER.secure"
 

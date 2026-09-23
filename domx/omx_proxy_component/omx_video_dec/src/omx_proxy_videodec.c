@@ -292,7 +292,6 @@ OMX_ERRORTYPE PROXY_VIDDEC_GetExtensionIndex(OMX_IN OMX_HANDLETYPE hComponent,
 		OMX_IN OMX_STRING cParameterName, OMX_OUT OMX_INDEXTYPE * pIndexType)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
-	PROXY_COMPONENT_PRIVATE *pCompPrv = NULL;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
 
 	PROXY_require((hComp->pComponentPrivate != NULL), OMX_ErrorBadParameter, NULL);
@@ -640,10 +639,9 @@ OMX_ERRORTYPE RPC_UTIL_SetStrideAndPadding(OMX_COMPONENTTYPE * hComponent,PROXY_
 /* ===========================================================================*/
 OMX_ERRORTYPE PROXY_VIDDEC_FillThisBuffer(OMX_HANDLETYPE hComponent, OMX_BUFFERHEADERTYPE * pBufferHdr)
 {
-	OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn = OMX_ErrorNone;
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
-	OMX_U32 count = 0;
 	IMG_native_handle_t*  grallocHandle;
 	OMX_PARAM_PORTDEFINITIONTYPE sPortDef;
 
@@ -720,7 +718,7 @@ OMX_ERRORTYPE PROXY_VIDDEC_FillBufferDone(OMX_HANDLETYPE hComponent,
     OMX_TICKS nTimeStamp, OMX_HANDLETYPE hMarkTargetComponent,
     OMX_PTR pMarkData)
 {
-	OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn = OMX_ErrorNone;
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv = NULL;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
 	OMX_U32 count = 0;

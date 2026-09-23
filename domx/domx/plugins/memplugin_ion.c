@@ -121,13 +121,11 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_Close(__unused void *pMemPluginHandle, OMX_U32
 
     ion_close(nClient);
 
-EXIT:
     return eError;
 }
 MEMPLUGIN_ERRORTYPE MemPlugin_ION_Configure(__unused void *pMemPluginHandle, __unused void *pConfigData)
 {
     //implementation to be added later
-EXIT:
     return(MEMPLUGIN_ERROR_NONE);
 }
 
@@ -283,7 +281,6 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_Free(__unused void *pMemPluginHandle,OMX_U32 n
     //free
     ion_free(nClient, (ion_user_handle_t)pIonBufferProp->sBuffer_accessor.pBufferHandle);
 
-EXIT:
       if (eError != MEMPLUGIN_ERROR_NONE) {
           DOMX_EXIT("%s exited with error 0x%x",__FUNCTION__,eError);
          return eError;
@@ -304,6 +301,5 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_DeInit(void *pMemPluginHandle)
     }
     TIMM_OSAL_Free((MEMPLUGIN_OBJECT *)pMemPluginHandle);
     pMemPluginHandle = NULL;
-EXIT:
     return (eError);
 }

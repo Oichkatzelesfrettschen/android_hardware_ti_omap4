@@ -239,7 +239,7 @@ EXIT:
 
 static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
 {
-	OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn = OMX_ErrorNone;
+	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	TIMM_OSAL_ERRORTYPE eOsalError = TIMM_OSAL_ERR_NONE;
 	PROXY_COMPONENT_PRIVATE *pCompPrv;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
@@ -247,7 +247,6 @@ static OMX_ERRORTYPE ComponentPrivateDeInit(OMX_IN OMX_HANDLETYPE hComponent)
     OMX_PROXY_CAM_PRIVATE* pCamPrv;
     MEMPLUGIN_BUFFER_PARAMS delBuffer_params;
     MEMPLUGIN_BUFFER_PROPERTIES delBuffer_prop;
-    RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 
         MEMPLUGIN_BUFFER_PARAMS_INIT(delBuffer_params);
 	pCompPrv = (PROXY_COMPONENT_PRIVATE *) hComp->pComponentPrivate;
@@ -301,7 +300,7 @@ static OMX_ERRORTYPE Camera_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
     OMX_IN OMX_U32 nParam, OMX_IN OMX_PTR pCmdData)
 
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone, eCompReturn;
+    OMX_ERRORTYPE eError = OMX_ErrorNone;
 #ifdef USES_LEGACY_DOMX_DCC
     OMX_ERRORTYPE dcc_eError = OMX_ErrorNone;
 #endif
@@ -377,7 +376,6 @@ static OMX_ERRORTYPE Camera_SendCommand(OMX_IN OMX_HANDLETYPE hComponent,
     eError =
 	PROXY_SendCommand(hComponent,eCmd,nParam,pCmdData);
 
-EXIT:
 
    DOMX_EXIT("eError: %d", eError);
    return eError;
@@ -400,7 +398,6 @@ static OMX_ERRORTYPE CameraGetConfig(OMX_IN OMX_HANDLETYPE
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
 	OMX_PTR pTempSharedBuff = NULL;
-	OMX_U32 status = 0;
 
 	switch ((unsigned int)nParamIndex)
 	{
@@ -465,7 +462,6 @@ static OMX_ERRORTYPE CameraSetConfig(OMX_IN OMX_HANDLETYPE
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
 	OMX_TI_CONFIG_SHAREDBUFFER *pConfigSharedBuffer = NULL;
 	OMX_PTR pTempSharedBuff = NULL;
-	OMX_U32 status = 0;
 
 	switch ((unsigned int)nParamIndex)
 	{
@@ -543,7 +539,6 @@ static OMX_ERRORTYPE CameraSetParam(OMX_IN OMX_HANDLETYPE
 								nParamIndex,
 								pComponentParameterStructure,
 							NULL, 0);
-EXIT:
 	if (eError != OMX_ErrorNone) {
 		DOMX_ERROR(" CameraSetParam: Error in SetParam 0x%x", eError);
 	}
@@ -553,14 +548,11 @@ EXIT:
 OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
 {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
-	OMX_ERRORTYPE dcc_eError = OMX_ErrorNone;
 	OMX_COMPONENTTYPE *pHandle = NULL;
 	PROXY_COMPONENT_PRIVATE *pComponentPrivate;
     OMX_U32 i = 0, j = 0;
     OMX_PROXY_CAM_PRIVATE* pCamPrv;
-	MEMPLUGIN_ERRORTYPE eMemError = MEMPLUGIN_ERROR_NONE;
 	pHandle = (OMX_COMPONENTTYPE *) hComponent;
-	TIMM_OSAL_ERRORTYPE eOsalError = TIMM_OSAL_ERR_NONE;
 	DOMX_ENTER("_____________________INSIDE CAMERA PROXY"
 	    "WRAPPER__________________________\n");
 	pHandle->pComponentPrivate = (PROXY_COMPONENT_PRIVATE *)
@@ -655,7 +647,6 @@ OMX_ERRORTYPE DCC_Init(OMX_HANDLETYPE hComponent)
        MEMPLUGIN_BUFFER_PARAMS sDccBuff_params;
        MEMPLUGIN_BUFFER_PROPERTIES sDccBuff_prop;
        MEMPLUGIN_ERRORTYPE eMemError = MEMPLUGIN_ERROR_NONE;
-       OMX_S32 status = 0;
        OMX_STRING dcc_dir[200];
        OMX_U16 i;
        _PROXY_OMX_INIT_PARAM(&param, OMX_TI_PARAM_DCCURIINFO);
@@ -675,7 +666,7 @@ OMX_ERRORTYPE DCC_Init(OMX_HANDLETYPE hComponent)
                param.nIndex = nIndex;
                eError =
                        OMX_GetParameter(hComponent,
-                       OMX_TI_IndexParamDccUriInfo, &param);
+                       (OMX_INDEXTYPE) OMX_TI_IndexParamDccUriInfo, &param);
 
                PROXY_assert((eError == OMX_ErrorNone) ||
                        (eError == OMX_ErrorNoMore), eError,
@@ -784,7 +775,7 @@ else
                uribufparam.pSharedBuff, uribufparam.nSharedBuffSize);
 
        eError = __PROXY_SetParameter(hComponent,
-                                                               OMX_TI_IndexParamDccUriBuffer,
+                                                               (OMX_INDEXTYPE) OMX_TI_IndexParamDccUriBuffer,
                                                                &uribufparam,
                                                                &(uribufparam.pSharedBuff), 1);
 
@@ -864,7 +855,7 @@ OMX_S32 read_DCCdir(OMX_PTR buffer, OMX_STRING * dir_path, OMX_U16 numofURI)
                                                                ret = -1;
                                                        }
                                                        buffer =
-                                                           buffer + lSize;
+                                                           (OMX_U8 *)buffer + lSize;
                                                }
                                                /* getting the size of the total dcc files available in FS */
                                                dcc_buf_size =
@@ -896,7 +887,6 @@ OMX_S32 read_DCCdir(OMX_PTR buffer, OMX_STRING * dir_path, OMX_U16 numofURI)
 /* ===========================================================================*/
 void DCC_DeInit(OMX_HANDLETYPE hComponent)
 {
-       OMX_S16 status;
        MEMPLUGIN_BUFFER_PARAMS sDccBuff_params;
        MEMPLUGIN_BUFFER_PROPERTIES sDccBuff_prop;
        PROXY_COMPONENT_PRIVATE *pComponentPrivate;

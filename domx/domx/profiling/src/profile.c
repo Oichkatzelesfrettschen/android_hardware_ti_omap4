@@ -161,7 +161,6 @@ void KPI_OmxCompInit(OMX_HANDLETYPE hComponent)
 	char compName[OMX_MAX_STRINGNAME_SIZE];
 	char* p;
 	OMX_U32 omx_cnt;
-	struct timespec tp;
 
 	/* Check if some profiling events have been enabled/disabled */
 	KPI_OmxCompKpiUpdateStatus();

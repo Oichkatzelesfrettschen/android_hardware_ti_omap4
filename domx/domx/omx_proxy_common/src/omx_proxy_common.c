@@ -758,8 +758,6 @@ OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	//Round Off the size to allocate and map to next page boundary.
 	OMX_U32 nSize = (nSizeBytes + LINUX_PAGE_SIZE - 1) & ~(LINUX_PAGE_SIZE - 1);
 	OMX_U8* pMemptr = NULL;
-	OMX_CONFIG_RECTTYPE tParamRect;
-	OMX_PARAM_PORTDEFINITIONTYPE tParamPortDef;
 
 	PROXY_require((hComp->pComponentPrivate != NULL),
 	    OMX_ErrorBadParameter, NULL);
@@ -955,11 +953,7 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
 	OMX_BOOL bSlotFound = OMX_FALSE;
 	OMX_PTR pAuxBuf0 = pBuffer;
-	OMX_PTR pMappedMetaDataBuffer = NULL;
 	OMX_TI_PARAM_METADATABUFFERINFO tMetaDataBuffer;
-	OMX_U32 nBufferHeight = 0;
-	OMX_CONFIG_RECTTYPE tParamRect;
-	OMX_PARAM_PORTDEFINITIONTYPE tParamPortDef;
 	MEMPLUGIN_BUFFER_PROPERTIES metadataBuffer_prop;
 	MEMPLUGIN_BUFFER_PARAMS metadataBuffer_params;
 	MEMPLUGIN_ERRORTYPE eMemError = MEMPLUGIN_ERROR_NONE;
@@ -1327,7 +1321,6 @@ OMX_ERRORTYPE __PROXY_SetParameter(OMX_IN OMX_HANDLETYPE hComponent,
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv = NULL;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
-	OMX_TI_PARAM_USEBUFFERDESCRIPTOR *ptBufDescParam = NULL;
 #ifdef ENABLE_GRALLOC_BUFFERS
 	OMX_TI_PARAMUSENATIVEBUFFER *pParamNativeBuffer = NULL;
 #endif
@@ -1458,7 +1451,6 @@ OMX_ERRORTYPE __PROXY_GetParameter(OMX_IN OMX_HANDLETYPE hComponent,
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv = NULL;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
-	OMX_TI_PARAM_USEBUFFERDESCRIPTOR *ptBufDescParam = NULL;
 #ifdef USE_ION
 	OMX_PTR *pAuxBuf = pLocBufNeedMap;
 	OMX_PTR pRegistered = NULL;
@@ -2117,7 +2109,7 @@ OMX_ERRORTYPE PROXY_ComponentDeInit(OMX_HANDLETYPE hComponent)
 	    RPC_OMX_ErrorNone;
 	PROXY_COMPONENT_PRIVATE *pCompPrv;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
-	OMX_U32 count = 0, nStride = 0, nPortIndex = 0;
+	OMX_U32 count = 0, nPortIndex = 0;
 	OMX_PTR pMetaDataBuffer = NULL;
 	MEMPLUGIN_BUFFER_PROPERTIES delBuffer_prop;
 	MEMPLUGIN_BUFFER_PARAMS delBuffer_params;

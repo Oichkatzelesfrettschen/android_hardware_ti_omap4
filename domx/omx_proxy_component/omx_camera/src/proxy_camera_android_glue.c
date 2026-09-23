@@ -56,19 +56,13 @@
 #define MAX_NUM_INTERNAL_BUFFERS 4
 OMX_ERRORTYPE GLUE_CameraSetParam(OMX_IN OMX_HANDLETYPE
     hComponent, OMX_IN OMX_INDEXTYPE nParamIndex,
-    OMX_INOUT OMX_PTR pComponentParameterStructure)
+    OMX_INOUT OMX_PTR pComponentParameterStructure __unused)
     {
 	OMX_ERRORTYPE eError = OMX_ErrorNone;
-	MEMPLUGIN_ERRORTYPE eMemError = MEMPLUGIN_ERROR_NONE;
     MEMPLUGIN_BUFFER_PARAMS newBuffer_params,delBuffer_params;
-    MEMPLUGIN_BUFFER_PROPERTIES newBuffer_prop,delBuffer_prop;
-    OMX_S32 ret = 0;
     PROXY_COMPONENT_PRIVATE *pCompPrv;
     OMX_PROXY_CAM_PRIVATE* pCamPrv;
     OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *)hComponent;
-    OMX_U32 stride_Y = 0;
-    OMX_TI_PARAM_COMPONENTBUFALLOCTYPE *bufferalloc = NULL;
-    int size = 0;
     MEMPLUGIN_ION_PARAMS *pIonParams;
     MEMPLUGIN_OBJECT	*pMemPluginHdl;
 

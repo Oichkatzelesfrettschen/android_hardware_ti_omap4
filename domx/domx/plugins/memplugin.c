@@ -166,7 +166,6 @@ EXIT:
 MEMPLUGIN_ERRORTYPE MemPlugin_Configure(__unused void *pMemPluginHandle, __unused void *pConfigData)
 {
     //implementation to be added later
-EXIT:
     return(MEMPLUGIN_ERROR_NONE);
 }
 

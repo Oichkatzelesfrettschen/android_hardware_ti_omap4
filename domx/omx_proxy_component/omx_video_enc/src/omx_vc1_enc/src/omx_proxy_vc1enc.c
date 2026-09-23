@@ -320,7 +320,6 @@ OMX_ERRORTYPE OMX_ComponentInit(OMX_HANDLETYPE hComponent)
     PROXY_COMPONENT_PRIVATE   *pComponentPrivate = NULL;
 
     pHandle = (OMX_COMPONENTTYPE *) hComponent;
-    OMX_TI_PARAM_ENHANCEDPORTRECONFIG    tParamStruct;
 #ifdef ANDROID_CUSTOM_OPAQUECOLORFORMAT
     TIMM_OSAL_ERRORTYPE       eOSALStatus = TIMM_OSAL_ERR_NONE;
     OMX_PROXY_ENCODER_PRIVATE   *pProxy = NULL;
@@ -715,7 +714,7 @@ OMX_ERRORTYPE LOCAL_PROXY_VC1E_EmptyThisBuffer(OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE        *pCompPrv;
     OMX_COMPONENTTYPE              *hComp = (OMX_COMPONENTTYPE *) hComponent;
     OMX_PTR                         pBufferOrig = NULL;
-    OMX_U32                         nStride = 0, nNumLines = 0;
+    OMX_U32                         nStride = 0;
     OMX_PARAM_PORTDEFINITIONTYPE    tParamStruct;
     OMX_U32                         nFilledLen, nAllocLen;
 
@@ -925,8 +924,6 @@ static OMX_ERRORTYPE LOCAL_PROXY_VC1E_AllocateBuffer(OMX_HANDLETYPE hComponent,
     PROXY_COMPONENT_PRIVATE   *pCompPrv = NULL;
     OMX_COMPONENTTYPE         *hComp = (OMX_COMPONENTTYPE *) hComponent;
     OMX_PROXY_ENCODER_PRIVATE    *pProxy = NULL;
-    TIMM_OSAL_ERRORTYPE        eOSALStatus = TIMM_OSAL_ERR_NONE;
-    int                        err, nStride;
 
     DOMX_ENTER
         ("hComponent = %p, pCompPrv = %p, nPortIndex = %d, pAppPrivate = %p ,nSizeBytes = %d",
