@@ -3045,7 +3045,8 @@ PVRSRVSwapToDCBuffer2BW(IMG_UINT32 ui32BridgeID,
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
 	int iReleaseFd;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+	/* get_unused_fd_flags() is a macro before 3.7 and a function after. */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
 	iReleaseFd = get_unused_fd_flags(O_CLOEXEC);
 #else
 	iReleaseFd = get_unused_fd();

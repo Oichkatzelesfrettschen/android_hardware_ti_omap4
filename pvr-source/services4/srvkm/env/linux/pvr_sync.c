@@ -762,13 +762,15 @@ PVRSyncIOCTLCreate(struct PVR_SYNC_TIMELINE *psObj, void __user *pvData)
 	struct PVR_ALLOC_SYNC_DATA *psAllocSyncData;
 	struct PVR_SYNC_CREATE_IOCTL_DATA sData;
 	int err = -EFAULT, iFd;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+	struct sync_fence *psFence;
+	struct sync_pt *psPt;
+
+	/* get_unused_fd_flags() is a macro before 3.7 and a function after. */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
 	iFd = get_unused_fd_flags(O_CLOEXEC);
 #else
 	iFd = get_unused_fd();
 #endif
-	struct sync_fence *psFence;
-	struct sync_pt *psPt;
 
 	if (iFd < 0)
 	{
@@ -990,15 +992,17 @@ PVRSyncIOCTLAlloc(struct PVR_SYNC_TIMELINE *psTimeline, void __user *pvData)
 {
 	struct PVR_ALLOC_SYNC_DATA *psAllocSyncData;
 	int err = -EFAULT, iFd;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
-	iFd = get_unused_fd_flags(O_CLOEXEC);
-#else
-	iFd = get_unused_fd();
-#endif
 	struct PVR_SYNC_ALLOC_IOCTL_DATA sData;
 	PVRSRV_SYNC_DATA *psSyncData;
 	struct file *psFile;
 	PVRSRV_ERROR eError;
+
+	/* get_unused_fd_flags() is a macro before 3.7 and a function after. */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)) || defined(get_unused_fd_flags)
+	iFd = get_unused_fd_flags(O_CLOEXEC);
+#else
+	iFd = get_unused_fd();
+#endif
 
 	if (iFd < 0)
 	{
