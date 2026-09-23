@@ -1,0 +1,4 @@
+# The HAL1 camera runs in the legacy camera provider and reaches Ducati
+# through rpmsg and the SGX for preview buffers.
+allow hal_camera_default gpu_device:chr_file rw_file_perms;
+allow hal_camera_default rpmsg_device:chr_file rw_file_perms;

@@ -1,2 +1,1 @@
-# Hardware tunables
-allow init sysfs_hardware:file rw_file_perms;
+allow init sysfs_hardware:file { r_file_perms setattr relabelto };

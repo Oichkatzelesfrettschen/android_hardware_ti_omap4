@@ -1,11 +1,6 @@
+# pvrsrvinit loads the SGX microkernel through /dev/pvrsrvkm once at boot.
 type pvrsrvinit, domain;
-type pvrsrvinit_exec, exec_type, file_type;
-
+type pvrsrvinit_exec, exec_type, vendor_file_type, file_type;
 init_daemon_domain(pvrsrvinit)
 
-ifdef(`android_api_lp_or_later', `
-  allow pvrsrvinit gpu_device:chr_file rw_file_perms;
-')
-
-allow pvrsrvinit kernel:system module_request;
-allow pvrsrvinit self:capability sys_module;
+allow pvrsrvinit gpu_device:chr_file rw_file_perms;
