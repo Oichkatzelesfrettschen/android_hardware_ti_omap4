@@ -31,12 +31,11 @@ namespace Ti {
 namespace Camera {
 
 status_t OMXCameraAdapter::setParametersAlgo(const android::CameraParameters &params,
-                                             BaseCameraAdapter::AdapterState state)
+                                             BaseCameraAdapter::AdapterState state __unused)
 {
     status_t ret = NO_ERROR;
     const char *valstr = NULL;
     const char *valManualStr = NULL;
-    const char *oldstr = NULL;
     OMXCameraPortParameters *cap;
     BrightnessMode gbce = BRIGHTNESS_OFF;
     BrightnessMode glbce = BRIGHTNESS_OFF;
@@ -679,7 +678,6 @@ status_t OMXCameraAdapter::setCaptureMode(OMXCameraAdapter::CaptureMode mode)
             CAMHAL_LOGDA("Camera mode: HIGH QUALITY");
             camMode.eCamOperatingMode = OMX_CaptureImageProfileBase;
         } else if( OMXCameraAdapter::HIGH_QUALITY_ZSL== mode ) {
-            const char* valstr = NULL;
             CAMHAL_LOGDA("Camera mode: HIGH QUALITY_ZSL");
             camMode.eCamOperatingMode = OMX_TI_CaptureImageProfileZeroShutterLag;
 
@@ -1195,8 +1193,6 @@ status_t OMXCameraAdapter::setVFramerate(OMX_U32 minFrameRate, OMX_U32 maxFrameR
     status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_TI_CONFIG_VARFRMRANGETYPE vfr;
-    OMXCameraPortParameters * mPreviewData =
-        &mCameraAdapterParameters.mCameraPortParams[mCameraAdapterParameters.mPrevPortIndex];
 
     LOG_FUNCTION_NAME;
 
@@ -1234,7 +1230,7 @@ status_t OMXCameraAdapter::setVFramerate(OMX_U32 minFrameRate, OMX_U32 maxFrameR
     return ret;
  }
 
-status_t OMXCameraAdapter::setMechanicalMisalignmentCorrection(const bool enable)
+status_t OMXCameraAdapter::setMechanicalMisalignmentCorrection(const bool enable __unused)
 {
     status_t ret = NO_ERROR;
 #if !defined(MOTOROLA_CAMERA) && !defined(CAMERAHAL_TUNA)

@@ -421,8 +421,8 @@ class CameraFrame
     mFrameMask(0),
     mQuirks(0)
     {
-      mYuv[0] = 0; // NULL is meant for pointers
-      mYuv[1] = 0; // NULL is meant for pointers
+      mYuv[0] = 0;
+      mYuv[1] = 0;
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
         mMetaData = 0;
@@ -441,7 +441,7 @@ class CameraFrame
     size_t mLength;
     unsigned mFrameMask;
     unsigned int mQuirks;
-    unsigned int mYuv[2];
+    uintptr_t mYuv[2];
 #ifdef OMAP_ENHANCEMENT_CPCAM
     android::sp<CameraMetadataResult> mMetaData;
 #endif
@@ -640,7 +640,7 @@ public:
     //additional methods used for memory mapping
     virtual uint32_t * getOffsets() = 0;
     virtual int getFd() = 0;
-    virtual CameraBuffer * getBuffers(bool reset = false) { return NULL; }
+    virtual CameraBuffer * getBuffers(bool reset __unused = false) { return NULL; }
     virtual unsigned int getSize() {return 0; }
     virtual int getBufferCount() {return -1; }
 
@@ -1066,7 +1066,7 @@ public:
     virtual status_t minUndequeueableBuffers(int& unqueueable) = 0;
 
     // Given a vector of DisplayAdapters find the one corresponding to str
-    virtual bool match(const char * str) { return false; }
+    virtual bool match(const char * str __unused) { return false; }
 
 private:
 #ifdef OMAP_ENHANCEMENT_CPCAM
@@ -1074,9 +1074,6 @@ private:
 #endif
 };
 
-static void releaseImageBuffers(void *userData);
-
-static void endImageCapture(void *userData);
 
  /**
     Implementation of the Android Camera hardware abstraction layer

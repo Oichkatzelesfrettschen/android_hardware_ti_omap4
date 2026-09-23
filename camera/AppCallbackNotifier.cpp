@@ -329,7 +329,6 @@ void AppCallbackNotifier::notifyEvent()
             mEventQ.get(&msg);
         }
     }
-    bool ret = true;
     CameraHalEvent *evt = NULL;
     CameraHalEvent::FocusEventData *focusEvtData;
     CameraHalEvent::ZoomEventData *zoomEvtData;
@@ -823,8 +822,8 @@ void AppCallbackNotifier::lockBufferAndUpdatePtrs(CameraFrame* frame)
     mapper.lockYCbCr(*handle, CAMHAL_GRALLOC_USAGE, bounds, &ycbcr);
     frame->mBuffer->mapped = ycbcr.y;
     frame->mBuffer->ycbcr = ycbcr;
-    frame->mYuv[0] = reinterpret_cast<int>(ycbcr.y);
-    frame->mYuv[1] = reinterpret_cast<int>(ycbcr.cb);
+    frame->mYuv[0] = reinterpret_cast<uintptr_t>(ycbcr.y);
+    frame->mYuv[1] = reinterpret_cast<uintptr_t>(ycbcr.cb);
 }
 
 void AppCallbackNotifier::unlockBufferAndUpdatePtrs(CameraFrame* frame)
@@ -833,8 +832,8 @@ void AppCallbackNotifier::unlockBufferAndUpdatePtrs(CameraFrame* frame)
     buffer_handle_t *handle = reinterpret_cast<buffer_handle_t *>(frame->mBuffer->opaque);
     mapper.unlock(*handle);
     frame->mBuffer->mapped = NULL;
-    frame->mYuv[0] = NULL;
-    frame->mYuv[1] = NULL;
+    frame->mYuv[0] = 0;
+    frame->mYuv[1] = 0;
 }
 
 void AppCallbackNotifier::setExternalLocking(bool extBuffLocking)
@@ -844,7 +843,6 @@ void AppCallbackNotifier::setExternalLocking(bool extBuffLocking)
 
 void AppCallbackNotifier::copyAndSendPreviewFrame(CameraFrame* frame, int32_t msgType)
 {
-    camera_memory_t* picture = NULL;
     CameraBuffer * dest = NULL;
 
     // scope for lock
@@ -885,7 +883,7 @@ void AppCallbackNotifier::copyAndSendPreviewFrame(CameraFrame* frame, int32_t ms
                     memset(dest->mapped, 0, (mPreviewMemory->size / MAX_BUFFERS));
                 }
             } else {
-              if ((NULL == frame->mYuv[0]) || (NULL == frame->mYuv[1])){
+              if ((0 == frame->mYuv[0]) || (0 == frame->mYuv[1])){
                 CAMHAL_LOGEA("Error! One of the YUV Pointer is NULL");
                 goto exit;
               }
@@ -962,8 +960,6 @@ void AppCallbackNotifier::notifyFrame()
     ///Receive and send the frame notifications to app
     Utils::Message msg;
     CameraFrame *frame;
-    android::MemoryHeapBase *heap;
-    android::MemoryBase *buffer = NULL;
     android::sp<android::MemoryBase> memBase;
     void *buf = NULL;
 
@@ -978,7 +974,6 @@ void AppCallbackNotifier::notifyFrame()
         }
     }
 
-    bool ret = true;
 
     frame = NULL;
     switch(msg.command)
@@ -1311,7 +1306,6 @@ void AppCallbackNotifier::notifyFrame()
 
         };
 
-exit:
 
     if ( NULL != frame )
         {
@@ -1590,9 +1584,8 @@ void AppCallbackNotifier::setFrameProvider(FrameNotifier *frameNotifier)
     LOG_FUNCTION_NAME_EXIT;
 }
 
-status_t AppCallbackNotifier::startPreviewCallbacks(android::CameraParameters &params, CameraBuffer *buffers, uint32_t *offsets, int fd, size_t length, size_t count)
+status_t AppCallbackNotifier::startPreviewCallbacks(android::CameraParameters &params, CameraBuffer *buffers __unused, uint32_t *offsets __unused, int fd __unused, size_t length __unused, size_t count __unused)
 {
-    unsigned int *bufArr;
     int size = 0;
 
     LOG_FUNCTION_NAME;
@@ -1757,7 +1750,7 @@ status_t AppCallbackNotifier::startRecording()
 }
 
 //Allocate metadata buffers for video recording
-status_t AppCallbackNotifier::initSharedVideoBuffers(CameraBuffer *buffers, uint32_t *offsets, int fd, size_t length, size_t count, CameraBuffer *vidBufs)
+status_t AppCallbackNotifier::initSharedVideoBuffers(CameraBuffer *buffers, uint32_t *offsets __unused, int fd __unused, size_t length __unused, size_t count, CameraBuffer *vidBufs)
 {
     status_t ret = NO_ERROR;
     LOG_FUNCTION_NAME;
@@ -1797,7 +1790,6 @@ status_t AppCallbackNotifier::initSharedVideoBuffers(CameraBuffer *buffers, uint
             }
         }
 
-exit:
     LOG_FUNCTION_NAME_EXIT;
 
     return ret;

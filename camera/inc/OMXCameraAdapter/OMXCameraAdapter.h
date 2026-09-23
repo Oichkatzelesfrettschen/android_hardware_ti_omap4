@@ -145,21 +145,6 @@ namespace Camera {
 
 const int64_t kCameraBufferLatencyNs = 250000000LL; // 250 ms
 
-///OMX Specific Functions
-static OMX_ERRORTYPE OMXCameraAdapterEventHandler(OMX_IN OMX_HANDLETYPE hComponent,
-                                        OMX_IN OMX_PTR pAppData,
-                                        OMX_IN OMX_EVENTTYPE eEvent,
-                                        OMX_IN OMX_U32 nData1,
-                                        OMX_IN OMX_U32 nData2,
-                                        OMX_IN OMX_PTR pEventData);
-
-static OMX_ERRORTYPE OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
-                                        OMX_IN OMX_PTR pAppData,
-                                        OMX_IN OMX_BUFFERHEADERTYPE* pBuffer);
-
-static OMX_ERRORTYPE OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
-                                        OMX_IN OMX_PTR pAppData,
-                                        OMX_IN OMX_BUFFERHEADERTYPE* pBuffHeader);
 
 struct CapResolution {
     size_t width, height;

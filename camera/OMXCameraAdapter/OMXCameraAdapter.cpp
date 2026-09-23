@@ -41,6 +41,22 @@ static int mDebugFcs = 0;
 namespace Ti {
 namespace Camera {
 
+// OMX IL callbacks; OMXCameraAdapter::initialize() registers them.
+static OMX_ERRORTYPE OMXCameraAdapterEventHandler(OMX_IN OMX_HANDLETYPE hComponent,
+                                        OMX_IN OMX_PTR pAppData,
+                                        OMX_IN OMX_EVENTTYPE eEvent,
+                                        OMX_IN OMX_U32 nData1,
+                                        OMX_IN OMX_U32 nData2,
+                                        OMX_IN OMX_PTR pEventData);
+
+static OMX_ERRORTYPE OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
+                                        OMX_IN OMX_PTR pAppData,
+                                        OMX_IN OMX_BUFFERHEADERTYPE* pBuffer);
+
+static OMX_ERRORTYPE OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
+                                        OMX_IN OMX_PTR pAppData,
+                                        OMX_IN OMX_BUFFERHEADERTYPE* pBuffHeader);
+
 #ifdef CAMERAHAL_OMX_PROFILING
 
 const char OMXCameraAdapter::DEFAULT_PROFILE_PATH[] = "/data/dbg/profile_data.bin";
@@ -72,7 +88,6 @@ status_t OMXCameraAdapter::initialize(CameraProperties::Properties* caps)
 
 #endif
 
-    TIMM_OSAL_ERRORTYPE osalError = OMX_ErrorNone;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     status_t ret = NO_ERROR;
 
@@ -570,9 +585,7 @@ status_t OMXCameraAdapter::setParameters(const android::CameraParameters &params
 {
     LOG_FUNCTION_NAME;
 
-    int mode = 0;
     status_t ret = NO_ERROR;
-    bool updateImagePortParams = false;
     int minFramerate, maxFramerate, frameRate;
     const char *valstr = NULL;
     int w, h;
@@ -723,7 +736,7 @@ status_t OMXCameraAdapter::setParameters(const android::CameraParameters &params
     return ret;
 }
 
-void saveFile(unsigned char   *buff, int width, int height, int format) {
+void saveFile(unsigned char   *buff, int width, int height, int format __unused) {
     static int      counter = 1;
     int             fd = -1;
     char            fn[256];
@@ -1135,8 +1148,6 @@ status_t OMXCameraAdapter::setFormat(OMX_U32 port, OMXCameraPortParameters &port
 {
     LOG_FUNCTION_NAME;
 
-    status_t ret = NO_ERROR;
-    size_t bufferCount;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_PARAM_PORTDEFINITIONTYPE portCheck;
 
@@ -1373,9 +1384,8 @@ status_t OMXCameraAdapter::flushBuffers(OMX_U32 nPort)
 }
 
 ///API to give the buffers to Adapter
-status_t OMXCameraAdapter::useBuffers(CameraMode mode, CameraBuffer * bufArr, int num, size_t length, unsigned int queueable)
+status_t OMXCameraAdapter::useBuffers(CameraMode mode, CameraBuffer * bufArr, int num, size_t length __unused, unsigned int queueable)
 {
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     status_t ret = NO_ERROR;
 
     LOG_FUNCTION_NAME;
@@ -1935,7 +1945,6 @@ status_t OMXCameraAdapter::UseBuffersPreview(CameraBuffer * bufArr, int num)
 {
     status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
-    int tmpHeight, tmpWidth;
 
     LOG_FUNCTION_NAME;
 
@@ -3049,7 +3058,8 @@ OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterEventHandler(OMX_IN OMX_HANDLETY
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     CAMHAL_LOGDB("+OMX_Event %x, %d %d", eEvent, (int)nData1, (int)nData2);
 
-    switch (eEvent) {
+    // The OMX_TI extension events (OMX_EVENTEXTTYPE) share this switch.
+    switch (static_cast<int>(eEvent)) {
         case OMX_EventCmdComplete:
             CAMHAL_LOGDB("+OMX_EventCmdComplete %d %d", (int)nData1, (int)nData2);
 
@@ -3143,18 +3153,17 @@ OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterEventHandler(OMX_IN OMX_HANDLETY
    LOG_FUNCTION_NAME_EXIT;
    return eError;
 
-    EXIT:
 
     CAMHAL_LOGEB("Exiting function %s because of eError=%x", __FUNCTION__, eError);
     LOG_FUNCTION_NAME_EXIT;
     return eError;
 }
 
-OMX_ERRORTYPE OMXCameraAdapter::SignalEvent(OMX_IN OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OMXCameraAdapter::SignalEvent(OMX_IN OMX_HANDLETYPE hComponent __unused,
                                           OMX_IN OMX_EVENTTYPE eEvent,
                                           OMX_IN OMX_U32 nData1,
                                           OMX_IN OMX_U32 nData2,
-                                          OMX_IN OMX_PTR pEventData)
+                                          OMX_IN OMX_PTR pEventData __unused)
 {
     android::AutoMutex lock(mEventLock);
     Utils::Message *msg;
@@ -3211,11 +3220,11 @@ OMX_ERRORTYPE OMXCameraAdapter::SignalEvent(OMX_IN OMX_HANDLETYPE hComponent,
     return OMX_ErrorNone;
 }
 
-OMX_ERRORTYPE OMXCameraAdapter::RemoveEvent(OMX_IN OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OMXCameraAdapter::RemoveEvent(OMX_IN OMX_HANDLETYPE hComponent __unused,
                                             OMX_IN OMX_EVENTTYPE eEvent,
                                             OMX_IN OMX_U32 nData1,
                                             OMX_IN OMX_U32 nData2,
-                                            OMX_IN OMX_PTR pEventData)
+                                            OMX_IN OMX_PTR pEventData __unused)
 {
   android::AutoMutex lock(mEventLock);
   Utils::Message *msg;
@@ -3235,8 +3244,7 @@ OMX_ERRORTYPE OMXCameraAdapter::RemoveEvent(OMX_IN OMX_HANDLETYPE hComponent,
                   && ( !msg->arg2 || ( OMX_U32 ) msg->arg2 == nData2 )
                   && msg->arg3)
                 {
-                  Utils::Semaphore *sem  = (Utils::Semaphore*) msg->arg3;
-                  CAMHAL_LOGDA("Event matched, signalling sem");
+                  CAMHAL_LOGDA("Event matched, removing it without signalling");
                   mEventSignalQ.removeAt(i);
                   free(msg);
                   break;
@@ -3309,7 +3317,7 @@ OMX_ERRORTYPE OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
 /*========================================================*/
 /* @ fn SampleTest_EmptyBufferDone :: Application callback*/
 /*========================================================*/
-OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDLETYPE hComponent __unused,
                                    OMX_IN OMX_BUFFERHEADERTYPE* pBuffHeader)
 {
 
@@ -3318,7 +3326,6 @@ OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterEmptyBufferDone(OMX_IN OMX_HANDL
     status_t  res1, res2;
     OMXCameraPortParameters  *pPortParam;
     CameraFrame::FrameType typeOfFrame = CameraFrame::ALL_FRAMES;
-    unsigned int refCount = 0;
     unsigned int mask = 0xFFFF;
     CameraFrame cameraFrame;
     OMX_TI_PLATFORMPRIVATE *platformPrivate;
@@ -3433,7 +3440,7 @@ status_t OMXCameraAdapter::storeProfilingData(OMX_BUFFERHEADERTYPE* pBuffHeader)
 /*========================================================*/
 /* @ fn SampleTest_FillBufferDone ::  Application callback*/
 /*========================================================*/
-OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLETYPE hComponent __unused,
                                    OMX_IN OMX_BUFFERHEADERTYPE* pBuffHeader)
 {
 
@@ -3442,7 +3449,6 @@ OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLE
     OMXCameraPortParameters  *pPortParam;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     CameraFrame::FrameType typeOfFrame = CameraFrame::ALL_FRAMES;
-    unsigned int refCount = 0;
     BaseCameraAdapter::AdapterState state, nextState;
     BaseCameraAdapter::getState(state);
     BaseCameraAdapter::getNextState(nextState);
@@ -3618,7 +3624,6 @@ OMX_ERRORTYPE OMXCameraAdapter::OMXCameraAdapterFillBufferDone(OMX_IN OMX_HANDLE
     else if( pBuffHeader->nOutputPortIndex == OMX_CAMERA_PORT_IMAGE_OUT_IMAGE )
     {
         OMX_COLOR_FORMATTYPE pixFormat;
-        const char *valstr = NULL;
 
         pixFormat = pPortParam->mColorFormat;
 
@@ -3880,8 +3885,8 @@ status_t OMXCameraAdapter::sendCallBacks(CameraFrame frame, OMX_IN OMX_BUFFERHEA
   frame.mOffset = pBuffHeader->nOffset;
   frame.mWidth = port->mWidth;
   frame.mHeight = port->mHeight;
-  frame.mYuv[0] = NULL;
-  frame.mYuv[1] = NULL;
+  frame.mYuv[0] = 0;
+  frame.mYuv[1] = 0;
 
   if ( onlyOnce && mRecording )
     {
@@ -3911,7 +3916,6 @@ bool OMXCameraAdapter::CommandHandler::Handler()
     Utils::Message msg;
     volatile int forever = 1;
     status_t stat;
-    ErrorNotifier *errorNotify = NULL;
 
     LOG_FUNCTION_NAME;
 
@@ -4448,7 +4452,6 @@ public:
 
 private:
     OMX_HANDLETYPE mComponent;
-    OMX_STATETYPE mState;
 };
 
 extern "C" status_t OMXCameraAdapter_Capabilities(

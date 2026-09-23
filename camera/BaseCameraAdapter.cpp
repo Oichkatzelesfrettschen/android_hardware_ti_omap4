@@ -307,8 +307,8 @@ void BaseCameraAdapter::addFramePointers(CameraBuffer *frameBuf, android_ycbcr* 
     {
       CameraFrame *frame = new CameraFrame;
       frame->mBuffer = frameBuf;
-      frame->mYuv[0] = (unsigned int)ycbcr->y;
-      frame->mYuv[1] = (unsigned int)ycbcr->cb;
+      frame->mYuv[0] = reinterpret_cast<uintptr_t>(ycbcr->y);
+      frame->mYuv[1] = reinterpret_cast<uintptr_t>(ycbcr->cb);
       mFrameQueue.add(frameBuf, frame);
 
       CAMHAL_LOGVB("Adding Frame=0x%x Y=0x%x UV=0x%x", frame->mBuffer, frame->mYuv[0], frame->mYuv[1]);
@@ -333,7 +333,6 @@ void BaseCameraAdapter::removeFramePointers()
 void BaseCameraAdapter::returnFrame(CameraBuffer * frameBuf, CameraFrame::FrameType frameType)
 {
     status_t res = NO_ERROR;
-    size_t subscriberCount = 0;
     int refCount = -1;
 
     if ( NULL == frameBuf )
@@ -401,7 +400,7 @@ void BaseCameraAdapter::returnFrame(CameraBuffer * frameBuf, CameraFrame::FrameT
 
 }
 
-status_t BaseCameraAdapter::sendCommand(CameraCommands operation, int value1, int value2, int value3, int value4) {
+status_t BaseCameraAdapter::sendCommand(CameraCommands operation, int value1, int value2, int value3 __unused, int value4 __unused) {
     status_t ret = NO_ERROR;
     struct timeval *refTimestamp;
     BuffersDescriptor *desc = NULL;
@@ -1691,7 +1690,7 @@ status_t BaseCameraAdapter::stopImageCapture()
     return ret;
 }
 
-status_t BaseCameraAdapter::startBracketing(int range)
+status_t BaseCameraAdapter::startBracketing(int range __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1737,7 +1736,7 @@ status_t BaseCameraAdapter::cancelAutoFocus()
     return ret;
 }
 
-status_t BaseCameraAdapter::startSmoothZoom(int targetIdx)
+status_t BaseCameraAdapter::startSmoothZoom(int targetIdx __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1781,7 +1780,7 @@ status_t BaseCameraAdapter::stopPreview()
     return ret;
 }
 
-status_t BaseCameraAdapter::useBuffers(CameraMode mode, CameraBuffer* bufArr, int num, size_t length, unsigned int queueable)
+status_t BaseCameraAdapter::useBuffers(CameraMode mode __unused, CameraBuffer* bufArr __unused, int num __unused, size_t length __unused, unsigned int queueable __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1792,7 +1791,7 @@ status_t BaseCameraAdapter::useBuffers(CameraMode mode, CameraBuffer* bufArr, in
     return ret;
 }
 
-status_t BaseCameraAdapter::fillThisBuffer(CameraBuffer * frameBuf, CameraFrame::FrameType frameType)
+status_t BaseCameraAdapter::fillThisBuffer(CameraBuffer * frameBuf __unused, CameraFrame::FrameType frameType __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1803,7 +1802,7 @@ status_t BaseCameraAdapter::fillThisBuffer(CameraBuffer * frameBuf, CameraFrame:
     return ret;
 }
 
-status_t BaseCameraAdapter::getFrameSize(size_t &width, size_t &height)
+status_t BaseCameraAdapter::getFrameSize(size_t &width __unused, size_t &height __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1814,7 +1813,7 @@ status_t BaseCameraAdapter::getFrameSize(size_t &width, size_t &height)
     return ret;
 }
 
-status_t BaseCameraAdapter::getFrameDataSize(size_t &dataFrameSize, size_t bufferCount)
+status_t BaseCameraAdapter::getFrameDataSize(size_t &dataFrameSize __unused, size_t bufferCount __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1825,7 +1824,7 @@ status_t BaseCameraAdapter::getFrameDataSize(size_t &dataFrameSize, size_t buffe
     return ret;
 }
 
-status_t BaseCameraAdapter::getPictureBufferSize(CameraFrame &frame, size_t bufferCount)
+status_t BaseCameraAdapter::getPictureBufferSize(CameraFrame &frame __unused, size_t bufferCount __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1875,7 +1874,7 @@ const char* BaseCameraAdapter::getLUTvalue_translateHAL(int Value, LUTtypeHAL LU
     return NULL;
 }
 
-status_t BaseCameraAdapter::setupTunnel(uint32_t SliceHeight, uint32_t EncoderHandle, uint32_t width, uint32_t height) {
+status_t BaseCameraAdapter::setupTunnel(uint32_t SliceHeight __unused, uint32_t EncoderHandle __unused, uint32_t width __unused, uint32_t height __unused) {
   status_t ret = NO_ERROR;
   LOG_FUNCTION_NAME;
   LOG_FUNCTION_NAME_EXIT;
@@ -2627,7 +2626,6 @@ status_t BaseCameraAdapter::rollbackState()
 // please notice that these functions are locked
 CameraAdapter::AdapterState BaseCameraAdapter::getState()
 {
-    status_t ret = NO_ERROR;
 
     LOG_FUNCTION_NAME;
 
@@ -2640,7 +2638,6 @@ CameraAdapter::AdapterState BaseCameraAdapter::getState()
 
 CameraAdapter::AdapterState BaseCameraAdapter::getNextState()
 {
-    status_t ret = NO_ERROR;
 
     LOG_FUNCTION_NAME;
 
@@ -2682,7 +2679,7 @@ status_t BaseCameraAdapter::getNextState(AdapterState &state)
     return ret;
 }
 
-void BaseCameraAdapter::onOrientationEvent(uint32_t orientation, uint32_t tilt)
+void BaseCameraAdapter::onOrientationEvent(uint32_t orientation __unused, uint32_t tilt __unused)
 {
     LOG_FUNCTION_NAME;
     LOG_FUNCTION_NAME_EXIT;

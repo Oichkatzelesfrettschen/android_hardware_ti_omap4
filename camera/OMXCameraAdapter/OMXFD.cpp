@@ -29,8 +29,8 @@ namespace Camera {
 
 const uint32_t OMXCameraAdapter::FACE_DETECTION_THRESHOLD = 80;
 
-status_t OMXCameraAdapter::setParametersFD(const android::CameraParameters &params,
-                                           BaseCameraAdapter::AdapterState state)
+status_t OMXCameraAdapter::setParametersFD(const android::CameraParameters &params __unused,
+                                           BaseCameraAdapter::AdapterState state __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -68,7 +68,6 @@ status_t OMXCameraAdapter::startFaceDetection()
 status_t OMXCameraAdapter::stopFaceDetection()
 {
     status_t ret = NO_ERROR;
-    const char *str = NULL;
     BaseCameraAdapter::AdapterState state;
     BaseCameraAdapter::getState(state);
 

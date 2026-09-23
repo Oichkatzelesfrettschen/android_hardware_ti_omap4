@@ -122,9 +122,9 @@ bool CallbackDispatcherThread::threadLoop() {
 }
 
 //Static
-OMX_ERRORTYPE OmxFrameDecoder::eventCallback(const OMX_HANDLETYPE component,
+OMX_ERRORTYPE OmxFrameDecoder::eventCallback(const OMX_HANDLETYPE component __unused,
         const OMX_PTR appData, const OMX_EVENTTYPE event, const OMX_U32 data1, const OMX_U32 data2,
-        const OMX_PTR pEventData) {
+        const OMX_PTR pEventData __unused) {
     OmxMessage msg;
     msg.type = OmxMessage::EVENT;
     msg.u.eventData.appData = appData;
@@ -136,7 +136,7 @@ OMX_ERRORTYPE OmxFrameDecoder::eventCallback(const OMX_HANDLETYPE component,
 }
 
 //Static
-OMX_ERRORTYPE OmxFrameDecoder::emptyBufferDoneCallback(OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OmxFrameDecoder::emptyBufferDoneCallback(OMX_HANDLETYPE hComponent __unused,
         OMX_PTR appData, OMX_BUFFERHEADERTYPE* pBuffHead) {
     OmxMessage msg;
     msg.type = OmxMessage::EMPTY_BUFFER_DONE;
@@ -147,7 +147,7 @@ OMX_ERRORTYPE OmxFrameDecoder::emptyBufferDoneCallback(OMX_HANDLETYPE hComponent
 }
 
 //Static
-OMX_ERRORTYPE OmxFrameDecoder::fillBufferDoneCallback(OMX_HANDLETYPE hComponent,
+OMX_ERRORTYPE OmxFrameDecoder::fillBufferDoneCallback(OMX_HANDLETYPE hComponent __unused,
         OMX_PTR appData, OMX_BUFFERHEADERTYPE* pBuffHead) {
     OmxMessage msg;
     msg.type = OmxMessage::FILL_BUFFER_DONE;
@@ -187,7 +187,6 @@ OMX_ERRORTYPE OmxFrameDecoder::fillBufferDoneHandler(OMX_BUFFERHEADERTYPE* pBuff
     android::sp<MediaBuffer>& out = mOutBuffers->editItemAt(index);
 
     android::AutoMutex itemLock(out->getLock());
-    CameraBuffer* frame = static_cast<CameraBuffer*>(out->buffer);
     out->setOffset(pBuffHead->nOffset);
     out->setTimestamp(pBuffHead->nTimeStamp);
     out->setStatus((getOmxState() == OmxDecoderState_Executing) ? BufferStatus_OutFilled : BufferStatus_OutQueued);
@@ -196,7 +195,7 @@ OMX_ERRORTYPE OmxFrameDecoder::fillBufferDoneHandler(OMX_BUFFERHEADERTYPE* pBuff
 }
 
 OMX_ERRORTYPE OmxFrameDecoder::eventHandler(const OMX_EVENTTYPE event, const OMX_U32 data1, const OMX_U32 data2,
-            const OMX_PTR pEventData) {
+            const OMX_PTR pEventData __unused) {
 
     LOG_FUNCTION_NAME;
 
@@ -281,7 +280,7 @@ OMX_ERRORTYPE OmxFrameDecoder::eventHandler(const OMX_EVENTTYPE event, const OMX
     return ret;
     }
 
-void OmxFrameDecoder::doConfigure(const DecoderParameters& config) {
+void OmxFrameDecoder::doConfigure(const DecoderParameters& config __unused) {
     LOG_FUNCTION_NAME;
 
     LOG_FUNCTION_NAME_EXIT;
@@ -341,12 +340,15 @@ status_t OmxFrameDecoder::enablePortSync(int port) {
         CAMHAL_LOGE("OMX_SendCommand OMX_CommandPortEnable OUT returned error 0x%x", eError);
         return Utils::ErrorUtils::omxToAndroidError(eError);
     }
+    if (ret != NO_ERROR) {
+        CAMHAL_LOGE("Port %d enable ERROR 0x%x", port, ret);
+        return UNKNOWN_ERROR;
+    }
     return NO_ERROR;
 }
 
 
 status_t OmxFrameDecoder::doPortReconfigure() {
-    OMX_ERRORTYPE eError;
     status_t ret = NO_ERROR;
 
     CAMHAL_LOGD("Starting port reconfiguration !");
@@ -417,7 +419,6 @@ void OmxFrameDecoder::queueOutputBuffers() {
 
     LOG_FUNCTION_NAME;
 
-    android::GraphicBufferMapper &mapper = android::GraphicBufferMapper::get();
 
     for (size_t i = 0; i < mOutQueue.size(); i++) {
         int index = mOutQueue[i];
@@ -425,7 +426,6 @@ void OmxFrameDecoder::queueOutputBuffers() {
         android::AutoMutex bufferLock(outBuffer->getLock());
         if (outBuffer->getStatus() == BufferStatus_OutQueued) {
             outBuffer->setStatus(BufferStatus_OutWaitForFill);
-            CameraBuffer* frame = static_cast<CameraBuffer*>(outBuffer->buffer);
             OMX_BUFFERHEADERTYPE *pOutBufHdr = mOutBufferHeaders[outBuffer->bufferId];
             CAMHAL_LOGV("Fill this buffer cf=%p bh=%p id=%d", frame, pOutBufHdr, outBuffer->bufferId);
             status_t status = omxFillThisBuffer(pOutBufHdr);
@@ -647,7 +647,6 @@ status_t OmxFrameDecoder::allocateBuffersInput() {
 
 status_t OmxFrameDecoder::getAndConfigureDecoder() {
     status_t ret = NO_ERROR;
-    OMX_ERRORTYPE eError;
 
     ret = omxInit();
     if (ret != NO_ERROR) {
@@ -722,7 +721,6 @@ status_t OmxFrameDecoder::doStart() {
 
     status_t ret = NO_ERROR;
     mStopping = false;
-    OMX_ERRORTYPE eError;
 
     ret = getAndConfigureDecoder();
 
@@ -873,6 +871,11 @@ status_t OmxFrameDecoder::setVideoPortFormatType(
         OMX_ERRORTYPE  eError = OMX_GetParameter(
                 mHandleComp, OMX_IndexParamVideoPortFormat,
                 &format);
+        if (eError != OMX_ErrorNone) {
+            CAMHAL_LOGE("OMX_GetParameter(OMX_IndexParamVideoPortFormat) index %u returned 0x%x",
+                    index, eError);
+            return Utils::ErrorUtils::omxToAndroidError(eError);
+        }
 
         CAMHAL_LOGV("format.eCompressionFormat=0x%x format.eColorFormat=0x%x", format.eCompressionFormat, format.eColorFormat);
 
@@ -1032,7 +1035,7 @@ void OmxFrameDecoder::omxDumpPortSettings(OMX_PARAM_PORTDEFINITIONTYPE& def) {
     CAMHAL_LOGD("----------Port settings end--------------------");
 }
 
-void OmxFrameDecoder::omxDumpBufferHeader(OMX_BUFFERHEADERTYPE* bh) {
+void OmxFrameDecoder::omxDumpBufferHeader(OMX_BUFFERHEADERTYPE* bh __unused) {
     CAMHAL_LOGD("==============OMX_BUFFERHEADERTYPE start==============");
     CAMHAL_LOGD("nAllocLen=%d nFilledLen=%d nOffset=%d nFlags=0x%x", bh->nAllocLen, bh->nFilledLen, bh->nOffset, bh->nFlags);
     CAMHAL_LOGD("pBuffer=%p nOutputPortIndex=%d nInputPortIndex=%d nSize=0x%x", bh->pBuffer, bh->nOutputPortIndex, bh->nInputPortIndex, bh->nSize);

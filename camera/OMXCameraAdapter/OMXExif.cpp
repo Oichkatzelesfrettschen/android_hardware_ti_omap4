@@ -29,7 +29,7 @@ namespace Ti {
 namespace Camera {
 
 status_t OMXCameraAdapter::setParametersEXIF(const android::CameraParameters &params,
-                                             BaseCameraAdapter::AdapterState state)
+                                             BaseCameraAdapter::AdapterState state __unused)
 {
     status_t ret = NO_ERROR;
     const char *valstr = NULL;
@@ -533,7 +533,6 @@ status_t OMXCameraAdapter::setupEXIF_libjpeg(ExifElementsTable* exifTable,
                                              OMX_TI_WHITEBALANCERESULTTYPE* pWhiteBalanceData)
 {
     status_t ret = NO_ERROR;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     struct timeval sTv;
     struct tm *pTime;
     OMXCameraPortParameters * capData = NULL;

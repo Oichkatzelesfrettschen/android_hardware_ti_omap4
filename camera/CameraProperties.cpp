@@ -29,16 +29,6 @@
 namespace Ti {
 namespace Camera {
 
-// lower entries have higher priority
-static const char* g_camera_adapters[] = {
-#ifdef OMAP4_SUPPORT_OMX_CAMERA_ADAPTER
-    "libomxcameraadapter.so",
-#endif
-#ifdef OMAP4_SUPPORT_USB_CAMERA_ADAPTER
-    "libusbcameraadapter.so"
-#endif
-};
-
 /*********************************************************
  CameraProperties - public function implemetation
 **********************************************************/

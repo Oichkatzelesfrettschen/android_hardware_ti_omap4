@@ -195,6 +195,7 @@ TI_CAMERAHAL_COMMON_SHARED_LIBRARIES := \
     libcamera_client \
     libgui \
     libjpeg \
+    libsensor \
     $(TI_CAMERAHAL_EXIF_LIBRARY)
 
 TI_CAMERAHAL_COMMON_SHARED_LIBRARIES += libion

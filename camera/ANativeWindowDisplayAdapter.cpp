@@ -340,8 +340,6 @@ int ANativeWindowDisplayAdapter::enableDisplay(int width, int height, struct tim
 
 int ANativeWindowDisplayAdapter::disableDisplay(bool cancel_buffer)
 {
-    status_t ret = NO_ERROR;
-    android::GraphicBufferMapper &mapper = android::GraphicBufferMapper::get();
 
     LOG_FUNCTION_NAME;
 
@@ -827,7 +825,6 @@ int ANativeWindowDisplayAdapter::freeBufferList(CameraBuffer * buflist)
 {
     LOG_FUNCTION_NAME;
 
-    status_t ret = NO_ERROR;
 
     android::AutoMutex lock(mLock);
 
@@ -880,7 +877,6 @@ bool ANativeWindowDisplayAdapter::supportsExternalBuffering()
 void ANativeWindowDisplayAdapter::displayThread()
 {
     bool shouldLive = true;
-    int timeout = 0;
     status_t ret;
 
     LOG_FUNCTION_NAME;
@@ -1015,8 +1011,6 @@ bool ANativeWindowDisplayAdapter::processHalMsg()
 status_t ANativeWindowDisplayAdapter::PostFrame(ANativeWindowDisplayAdapter::DisplayFrame &dispFrame)
 {
     status_t ret = NO_ERROR;
-    uint32_t actualFramesWithDisplay = 0;
-    android_native_buffer_t *buffer = NULL;
     android::GraphicBufferMapper &mapper = android::GraphicBufferMapper::get();
     int i;
 

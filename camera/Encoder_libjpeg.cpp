@@ -426,7 +426,6 @@ status_t ExifElementsTable::insertElement(const char* tag, const char* value) {
 size_t Encoder_libjpeg::encode(params* input) {
     jpeg_compress_struct    cinfo;
     jpeg_error_mgr jerr;
-    jpeg_destination_mgr jdest;
     uint8_t* src = NULL, *resize_src = NULL;
     uint8_t* row_tmp = NULL;
     uint8_t* row_src = NULL;

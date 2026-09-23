@@ -36,7 +36,7 @@ namespace Camera {
 const nsecs_t OMXCameraAdapter::CANCEL_AF_TIMEOUT =  seconds_to_nanoseconds(1);
 
 status_t OMXCameraAdapter::setParametersFocus(const android::CameraParameters &params,
-                                              BaseCameraAdapter::AdapterState state)
+                                              BaseCameraAdapter::AdapterState state __unused)
 {
     status_t ret = NO_ERROR;
     const char *str = NULL;
@@ -313,7 +313,6 @@ status_t OMXCameraAdapter::getFocusMode(OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE &focus
 status_t OMXCameraAdapter::cancelAutoFocus()
 {
     status_t ret = NO_ERROR;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE focusMode;
 
     LOG_FUNCTION_NAME;

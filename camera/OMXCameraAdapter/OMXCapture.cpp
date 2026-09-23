@@ -30,7 +30,7 @@ namespace Ti {
 namespace Camera {
 
 status_t OMXCameraAdapter::setParametersCapture(const android::CameraParameters &params,
-                                                BaseCameraAdapter::AdapterState state)
+                                                BaseCameraAdapter::AdapterState state __unused)
 {
     status_t ret = NO_ERROR;
     const char *str = NULL;
@@ -40,7 +40,6 @@ status_t OMXCameraAdapter::setParametersCapture(const android::CameraParameters 
     const char *valstr = NULL;
     int varint = 0;
     OMX_TI_STEREOFRAMELAYOUTTYPE capFrmLayout;
-    bool inCaptureState = false;
 
     LOG_FUNCTION_NAME;
 
@@ -358,11 +357,10 @@ status_t OMXCameraAdapter::setParametersCapture(const android::CameraParameters 
     return ret;
 }
 
-status_t OMXCameraAdapter::getPictureBufferSize(CameraFrame &frame, size_t bufferCount)
+status_t OMXCameraAdapter::getPictureBufferSize(CameraFrame &frame, size_t bufferCount __unused)
 {
     status_t ret = NO_ERROR;
     OMXCameraPortParameters *imgCaptureData = NULL;
-    OMX_ERRORTYPE eError = OMX_ErrorNone;
 
     LOG_FUNCTION_NAME;
 
@@ -505,10 +503,10 @@ status_t OMXCameraAdapter::parseExpRange(const char *rangeStr,
 
 status_t OMXCameraAdapter::doExposureBracketing(int *evValues,
                                                  int *evValues2,
-                                                 int *evModes2,
+                                                 int *evModes2 __unused,
                                                  size_t evCount,
                                                  size_t frameCount,
-                                                 bool flush,
+                                                 bool flush __unused,
                                                  OMX_BRACKETMODETYPE bracketMode)
 {
     status_t ret = NO_ERROR;
@@ -758,7 +756,7 @@ status_t OMXCameraAdapter::setVectorShot(int *evValues,
 #endif
 
 status_t OMXCameraAdapter::setExposureBracketing(int *evValues,
-                                                 int *evValues2,
+                                                 int *evValues2 __unused,
                                                  size_t evCount,
                                                  size_t frameCount,
                                                  OMX_BRACKETMODETYPE bracketMode)
@@ -1474,7 +1472,7 @@ status_t OMXCameraAdapter::stopImageCapture()
 
     // Stop is always signalled externally in CPCAM mode
     // We need to make sure we really stop
-    if ((mCapMode == CP_CAM)) {
+    if (mCapMode == CP_CAM) {
         disableReprocess();
         disableImagePort();
         if ( NULL != mReleaseImageBuffersCallback ) {
@@ -1619,7 +1617,7 @@ EXIT:
     return (ret | Utils::ErrorUtils::omxToAndroidError(eError));
 }
 
-status_t OMXCameraAdapter::initInternalBuffers(OMX_U32 portIndex)
+status_t OMXCameraAdapter::initInternalBuffers(OMX_U32 portIndex __unused)
 {
 #ifndef CAMERAHAL_TUNA
     OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -1694,7 +1692,7 @@ status_t OMXCameraAdapter::initInternalBuffers(OMX_U32 portIndex)
 #endif
 }
 
-status_t OMXCameraAdapter::deinitInternalBuffers(OMX_U32 portIndex)
+status_t OMXCameraAdapter::deinitInternalBuffers(OMX_U32 portIndex __unused)
 {
     OMX_ERRORTYPE eError = OMX_ErrorNone;
 #ifndef CAMERAHAL_TUNA
@@ -1738,7 +1736,6 @@ status_t OMXCameraAdapter::UseBuffersCapture(CameraBuffer * bufArr, int num)
     status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMXCameraPortParameters * imgCaptureData = NULL;
-    OMXCameraPortParameters cap;
 
     imgCaptureData = &mCameraAdapterParameters.mCameraPortParams[mCameraAdapterParameters.mImagePortIndex];
 
@@ -1999,7 +1996,6 @@ status_t OMXCameraAdapter::UseBuffersRawCapture(CameraBuffer *bufArr, int num)
     OMX_ERRORTYPE eError;
     OMXCameraPortParameters * imgRawCaptureData = NULL;
     Utils::Semaphore camSem;
-    OMXCameraPortParameters cap;
 
     imgRawCaptureData = &mCameraAdapterParameters.mCameraPortParams[mCameraAdapterParameters.mVideoPortIndex];
 

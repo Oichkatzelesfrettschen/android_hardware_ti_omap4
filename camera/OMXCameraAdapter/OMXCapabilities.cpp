@@ -37,7 +37,6 @@ namespace Camera {
 
 static const char PARAM_SEP[] = ",";
 static const uint32_t VFR_OFFSET = 8;
-static const char FPS_STR_MAX_LEN = 10;
 
 static const unsigned int MANUAL_EXPOSURE_STEP = 1;
 static const unsigned int MANUAL_GAIN_ISO_MIN = 100;
@@ -488,7 +487,6 @@ size_t OMXCameraAdapter::encodeZoomCap(OMX_S32 maxZoom,
                      char * buffer,
                      size_t bufferSize)
 {
-    status_t res = NO_ERROR;
     size_t ret = 0;
 
     LOG_FUNCTION_NAME;
@@ -1491,7 +1489,6 @@ status_t OMXCameraAdapter::insertAreas(CameraProperties::Properties* params, OMX
 {
     status_t ret = NO_ERROR;
     char supported[MAX_PROP_VALUE_LENGTH];
-    const char *p;
 
     LOG_FUNCTION_NAME;
 
@@ -1605,7 +1602,6 @@ status_t OMXCameraAdapter::insertRaw(CameraProperties::Properties* params, OMX_T
 
     status_t ret = NO_ERROR;
     char supported[MAX_PROP_VALUE_LENGTH];
-    unsigned int i = 0;
 
     LOG_FUNCTION_NAME;
 
@@ -1691,12 +1687,10 @@ status_t OMXCameraAdapter::insertFocalLength(CameraProperties::Properties* param
     return ret;
 }
 
-status_t OMXCameraAdapter::insertAutoConvergenceModes(CameraProperties::Properties* params, OMX_TI_CAPTYPE &caps)
+status_t OMXCameraAdapter::insertAutoConvergenceModes(CameraProperties::Properties* params, OMX_TI_CAPTYPE &caps __unused)
 {
     status_t ret = NO_ERROR;
     char supported[MAX_PROP_VALUE_LENGTH];
-    const char *p;
-    unsigned int i = 0;
 
     LOG_FUNCTION_NAME;
 
@@ -1756,7 +1750,6 @@ status_t OMXCameraAdapter::insertCaptureModes(CameraProperties::Properties* para
 {
     status_t ret = NO_ERROR;
     char supported[MAX_PROP_VALUE_LENGTH];
-    const char *p;
 
     LOG_FUNCTION_NAME;
 
@@ -1814,7 +1807,6 @@ status_t OMXCameraAdapter::insertLayout(CameraProperties::Properties* params, OM
     status_t ret = NO_ERROR;
     char supported[MAX_PROP_VALUE_LENGTH];
     const char *p;
-    unsigned int i = 0;
 
     LOG_FUNCTION_NAME;
 
@@ -1868,7 +1860,7 @@ status_t OMXCameraAdapter::insertVideoSnapshotSupported(CameraProperties::Proper
 }
 
 status_t OMXCameraAdapter::insertGBCESupported(CameraProperties::Properties* params,
-                                               const OMX_TI_CAPTYPE &caps)
+                                               const OMX_TI_CAPTYPE &caps __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -1911,7 +1903,7 @@ status_t OMXCameraAdapter::insertGLBCESupported(CameraProperties::Properties* pa
     return ret;
 }
 
-status_t OMXCameraAdapter::insertDefaults(CameraProperties::Properties* params, OMX_TI_CAPTYPE &caps)
+status_t OMXCameraAdapter::insertDefaults(CameraProperties::Properties* params, OMX_TI_CAPTYPE &caps __unused)
 {
     status_t ret = NO_ERROR;
     char *pos, *str, *def;
@@ -1969,8 +1961,9 @@ status_t OMXCameraAdapter::insertDefaults(CameraProperties::Properties* params, 
     params->set(CameraProperties::SUPPORTED_EV_STEP, DEFAULT_EV_STEP);
     params->set(CameraProperties::EXPOSURE_MODE, DEFAULT_EXPOSURE_MODE);
     params->set(CameraProperties::FLASH_MODE, DEFAULT_FLASH_MODE);
-    pos = strstr(params->get(CameraProperties::SUPPORTED_FOCUS_MODES), DEFAULT_FOCUS_MODE_PREFERRED);
-    if ( NULL != pos )
+    const char *preferredFocus = strstr(params->get(CameraProperties::SUPPORTED_FOCUS_MODES),
+                                        DEFAULT_FOCUS_MODE_PREFERRED);
+    if ( NULL != preferredFocus )
         {
         params->set(CameraProperties::FOCUS_MODE, DEFAULT_FOCUS_MODE_PREFERRED);
         }
@@ -2271,7 +2264,7 @@ bool OMXCameraAdapter::_checkOmxTiCap(const OMX_TI_CAPTYPE & caps)
 }
 
 
-bool OMXCameraAdapter::_dumpOmxTiCap(const int sensorId, const OMX_TI_CAPTYPE & caps)
+bool OMXCameraAdapter::_dumpOmxTiCap(const int sensorId __unused, const OMX_TI_CAPTYPE & caps)
 {
     if ( !_checkOmxTiCap(caps) )
     {
@@ -2488,7 +2481,7 @@ bool OMXCameraAdapter::_dumpOmxTiCap(const int sensorId, const OMX_TI_CAPTYPE & 
  * public exposed function declarations
  *****************************************/
 
-status_t OMXCameraAdapter::getCaps(const int sensorId, CameraProperties::Properties* params, OMX_HANDLETYPE handle)
+status_t OMXCameraAdapter::getCaps(const int sensorId __unused, CameraProperties::Properties* params, OMX_HANDLETYPE handle)
 {
     status_t ret = NO_ERROR;
     int caps_size = 0;

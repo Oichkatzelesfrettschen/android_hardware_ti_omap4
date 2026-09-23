@@ -1531,7 +1531,7 @@ status_t CameraHal::freePreviewDataBufs()
     return ret;
 }
 
-status_t CameraHal::allocImageBufs(unsigned int width, unsigned int height, size_t size,
+status_t CameraHal::allocImageBufs(unsigned int width __unused, unsigned int height __unused, size_t size,
                                    const char* previewFormat, unsigned int bufferCount)
 {
     status_t ret = NO_ERROR;
@@ -1598,7 +1598,7 @@ status_t CameraHal::allocVideoBufs(uint32_t width, uint32_t height, uint32_t buf
         android::GraphicBufferAllocator &GrallocAlloc = android::GraphicBufferAllocator::get();
         buffer_handle_t handle;
 #ifdef ANDROID_API_N_MR1_OR_LATER
-        ret = GrallocAlloc.allocate(width, height, HAL_PIXEL_FORMAT_NV12, CAMHAL_GRALLOC_USAGE, &handle, &stride, i, "OMAP Camera");
+        ret = GrallocAlloc.allocate(width, height, HAL_PIXEL_FORMAT_NV12, 1, CAMHAL_GRALLOC_USAGE, &handle, &stride, "OMAP Camera");
 #else
         ret = GrallocAlloc.alloc(width, height, HAL_PIXEL_FORMAT_NV12, CAMHAL_GRALLOC_USAGE, &handle, &stride);
 #endif
@@ -1673,7 +1673,7 @@ status_t CameraHal::allocRawBufs(int width, int height, const char* previewForma
     return ret;
 }
 
-void endImageCapture( void *userData)
+static void endImageCapture( void *userData)
 {
     LOG_FUNCTION_NAME;
 
@@ -1686,7 +1686,7 @@ void endImageCapture( void *userData)
     LOG_FUNCTION_NAME_EXIT;
 }
 
-void releaseImageBuffers(void *userData)
+static void releaseImageBuffers(void *userData)
 {
     LOG_FUNCTION_NAME;
 
@@ -1701,7 +1701,6 @@ void releaseImageBuffers(void *userData)
 status_t CameraHal::signalEndImageCapture()
 {
     status_t ret = NO_ERROR;
-    int w,h;
     android::AutoMutex lock(mLock);
 
     LOG_FUNCTION_NAME;
@@ -2106,7 +2105,6 @@ status_t CameraHal::cameraPreviewInitialization()
 status_t CameraHal::setPreviewWindow(struct preview_stream_ops *window)
 {
     status_t ret = NO_ERROR;
-    CameraAdapter::BuffersDescriptor desc;
 
     LOG_FUNCTION_NAME;
     mSetPreviewWindowCalled = true;
@@ -2858,7 +2856,6 @@ bool CameraHal::resetVideoModeParameters()
 {
     const char *valstr = NULL;
     bool restartPreviewRequired = false;
-    status_t ret = NO_ERROR;
 
     LOG_FUNCTION_NAME;
 
@@ -3137,7 +3134,7 @@ void CameraHal::eventCallbackRelay(CameraHalEvent* event)
     LOG_FUNCTION_NAME_EXIT;
 }
 
-void CameraHal::eventCallback(CameraHalEvent* event)
+void CameraHal::eventCallback(CameraHalEvent* event __unused)
 {
     LOG_FUNCTION_NAME;
 
@@ -3149,7 +3146,6 @@ status_t CameraHal::startImageBracketing()
     status_t ret = NO_ERROR;
     CameraFrame frame;
     CameraAdapter::BuffersDescriptor desc;
-    unsigned int max_queueable = 0;
 
 
 
@@ -3294,7 +3290,7 @@ status_t CameraHal::takePicture(const char *params)
    @todo Define error codes if unable to switch to image capture
 
  */
-status_t CameraHal::__takePicture(const char *params, struct timeval *captureStart)
+status_t CameraHal::__takePicture(const char *params __unused, struct timeval *captureStart)
 {
     status_t ret = NO_ERROR;
     CameraFrame frame;
@@ -3897,7 +3893,7 @@ void CameraHal::putParameters(char *parms)
    @todo Define the error codes that this function can return
 
  */
-status_t CameraHal::sendCommand(int32_t cmd, int32_t arg1, int32_t arg2)
+status_t CameraHal::sendCommand(int32_t cmd, int32_t arg1, int32_t arg2 __unused)
 {
     status_t ret = NO_ERROR;
 
@@ -4028,7 +4024,7 @@ void CameraHal::release()
    @todo  Error codes for dump fail
 
  */
-status_t  CameraHal::dump(int fd) const
+status_t  CameraHal::dump(int fd __unused) const
 {
     LOG_FUNCTION_NAME;
     ///Implement this method when the h/w dump function is supported on Ducati side
@@ -4159,7 +4155,6 @@ CameraHal::~CameraHal()
     mDisplayAdapter.clear();
 
     if ( NULL != mCameraAdapter ) {
-        int strongCount = mCameraAdapter->getStrongCount();
 
         mCameraAdapter->decStrong(mCameraAdapter);
 
@@ -4331,7 +4326,6 @@ bool CameraHal::isResolutionValid(unsigned int width, unsigned int height, const
     bool ret = false;
     status_t status = NO_ERROR;
     char tmpBuffer[MAX_PROP_VALUE_LENGTH];
-    char *pos = NULL;
 
     LOG_FUNCTION_NAME;
 
@@ -4593,10 +4587,8 @@ void CameraHal::initDefaultParameters()
     //selected camera.
 
     android::CameraParameters &p = mParameters;
-    int currentRevision, adapterRevision;
     status_t ret = NO_ERROR;
     int width, height;
-    const char *valstr;
 
     LOG_FUNCTION_NAME;
 

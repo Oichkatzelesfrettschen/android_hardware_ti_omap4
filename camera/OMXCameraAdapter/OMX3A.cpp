@@ -492,7 +492,7 @@ void OMXCameraAdapter::updateGammaTable(const char* gamma)
 
 void OMXCameraAdapter::declareParameter3ABool(const android::CameraParameters &params, const char *key,
                                               OMX_BOOL &current_setting, E3ASettingsFlags pending,
-                                              const char *msg)
+                                              const char *msg __unused)
 {
     OMX_BOOL val = OMX_TRUE;
     const char *str = params.get(key);
@@ -678,7 +678,6 @@ status_t OMXCameraAdapter::setManualExposureVal(Gen3A_settings& Gen3A) {
 
 status_t OMXCameraAdapter::setFlashMode(Gen3A_settings& Gen3A)
 {
-    status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_IMAGE_PARAM_FLASHCONTROLTYPE flash;
     OMX_CONFIG_FOCUSASSISTTYPE focusAssist;
@@ -747,7 +746,6 @@ status_t OMXCameraAdapter::setFlashMode(Gen3A_settings& Gen3A)
 
 status_t OMXCameraAdapter::getFlashMode(Gen3A_settings& Gen3A)
 {
-    status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_IMAGE_PARAM_FLASHCONTROLTYPE flash;
 
@@ -782,7 +780,6 @@ status_t OMXCameraAdapter::setFocusMode(Gen3A_settings& Gen3A)
     status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE focus;
-    size_t top, left, width, height, weight;
     OMX_CONFIG_BOOLEANTYPE bOMX;
 
     LOG_FUNCTION_NAME;
@@ -888,10 +885,8 @@ status_t OMXCameraAdapter::setFocusMode(Gen3A_settings& Gen3A)
 
 status_t OMXCameraAdapter::getFocusMode(Gen3A_settings& Gen3A)
 {
-    status_t ret = NO_ERROR;
     OMX_ERRORTYPE eError = OMX_ErrorNone;
     OMX_IMAGE_CONFIG_FOCUSCONTROLTYPE focus;
-    size_t top, left, width, height, weight;
 
     LOG_FUNCTION_NAME;
 
@@ -1686,7 +1681,7 @@ status_t OMXCameraAdapter::set3ALock(OMX_BOOL toggleExp, OMX_BOOL toggleWb, OMX_
     return Utils::ErrorUtils::omxToAndroidError(eError);
 }
 
-status_t OMXCameraAdapter::setMeteringAreas(Gen3A_settings& Gen3A)
+status_t OMXCameraAdapter::setMeteringAreas(Gen3A_settings& Gen3A __unused)
 {
   status_t ret = NO_ERROR;
   OMX_ERRORTYPE eError = OMX_ErrorNone;
@@ -1968,7 +1963,6 @@ status_t OMXCameraAdapter::apply3Asettings( Gen3A_settings& Gen3A )
 {
     status_t ret = NO_ERROR;
     unsigned int currSett; // 32 bit
-    int portIndex;
 
     LOG_FUNCTION_NAME;
 
