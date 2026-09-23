@@ -300,24 +300,3 @@ char *smcGetPropertyAsString(char *pProp)
 }
 
 
-/**
- * get the value of a property
- * @param pProp we are asking the value of this property
- * @param pVal the value of the property
- * @return 0 if found, else 1 (and pVal set to 0)
- */
-int smcGetPropertyAsInt(char *pProp, int *pVal)
-{
-   char *pStr = SMCPropGetSystemProperty(&gConfFile, pProp);
-   if (pStr == NULL)
-   {
-      *pVal = 0;
-      return 1;
-   }
-   if (libString2GetStringAsInt(pStr, (uint32_t*)pVal) == S_SUCCESS)
-   {
-      return 0;
-   }
-   *pVal = 0;
-   return 1;
-}

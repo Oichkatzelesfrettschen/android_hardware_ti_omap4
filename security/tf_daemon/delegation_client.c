@@ -194,48 +194,6 @@ static MD_INLINE void LogInfo(const char* format, ...)
    va_end(ap);
 }
 
-static MD_INLINE void TRACE_ERROR(const char* format, ...)
-{
-#ifndef NDEBUG
-   va_list ap;
-   va_start(ap, format);
-   if (bDetached)
-   {
-      vsyslog(LOG_ERR, format, ap);
-   }
-   else
-   {
-      fprintf(stderr, "TRACE: ERROR: ");
-      vfprintf(stderr, format, ap);
-      fprintf(stderr, "\n");
-   }
-   va_end(ap);
-#else
-   MD_VAR_NOT_USED(format);
-#endif /* NDEBUG */
-}
-
-static MD_INLINE void TRACE_WARNING(const char* format, ...)
-{
-#ifndef NDEBUG
-   va_list ap;
-   va_start(ap, format);
-   if (bDetached)
-   {
-      vsyslog(LOG_WARNING, format, ap);
-   }
-   else
-   {
-      fprintf(stderr, "TRACE: WARNING: ");
-      vfprintf(stderr, format, ap);
-      fprintf(stderr, "\n");
-   }
-   va_end(ap);
-#else
-   MD_VAR_NOT_USED(format);
-#endif /* NDEBUG */
-}
-
 static MD_INLINE void TRACE_INFO(const char* format, ...)
 {
 #ifndef NDEBUG
@@ -273,16 +231,6 @@ static MD_INLINE void LogInfo(const char* format, ...)
    MD_VAR_NOT_USED(format);
 }
 
-static MD_INLINE void TRACE_ERROR(const char* format, ...)
-{
-   MD_VAR_NOT_USED(format);
-}
-
-static MD_INLINE void TRACE_WARNING(const char* format, ...)
-{
-   MD_VAR_NOT_USED(format);
-}
-
 static MD_INLINE void TRACE_INFO(const char* format, ...)
 {
    MD_VAR_NOT_USED(format);
@@ -316,34 +264,6 @@ static MD_INLINE void LogInfo(const char* format, ...)
    vfprintf(stderr, format, ap);
    fprintf(stderr, "\n");
    va_end(ap);
-}
-
-static MD_INLINE void TRACE_ERROR(const char* format, ...)
-{
-#ifndef NDEBUG
-   va_list ap;
-   va_start(ap, format);
-   fprintf(stderr, "TRACE: ERROR: ");
-   vfprintf(stderr, format, ap);
-   fprintf(stderr, "\n");
-   va_end(ap);
-#else
-   MD_VAR_NOT_USED(format);
-#endif /* NDEBUG */
-}
-
-static MD_INLINE void TRACE_WARNING(const char* format, ...)
-{
-#ifndef NDEBUG
-   va_list ap;
-   va_start(ap, format);
-   fprintf(stderr, "TRACE: WARNING: ");
-   vfprintf(stderr, format, ap);
-   fprintf(stderr, "\n");
-   va_end(ap);
-#else
-   MD_VAR_NOT_USED(format);
-#endif /* NDEBUG */
 }
 
 static MD_INLINE void TRACE_INFO(const char* format, ...)
@@ -872,7 +792,7 @@ static void notify(const wchar_t* pMessage, uint32_t nMessageType)
  * instructions and execute them in a loop. It never returns, but may call
  * exit when instructed to shutdown by the service
  */
-static int runSession(TEEC_Context* pContext, TEEC_Session* pSession, TEEC_Operation* pOperation)
+static int runSession(TEEC_Context* pContext __unused, TEEC_Session* pSession, TEEC_Operation* pOperation)
 {
    memset(&g_pExchangeBuffer->sAdministrativeData, 0x00, sizeof(g_pExchangeBuffer->sAdministrativeData));
 

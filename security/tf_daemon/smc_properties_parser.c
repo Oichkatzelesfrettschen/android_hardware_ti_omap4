@@ -557,18 +557,6 @@ char* SMCPropGetSystemProperty(CONF_FILE* pConfFile, char* pPropertyName)
    return NULL;
 }
 
-uint32_t SMCPropGetSystemPropertyAsInt(CONF_FILE* pConfFile, char* pPropertyName)
-{
-   uint32_t nValue;
-   char* pValue=SMCPropGetSystemProperty(pConfFile,pPropertyName);
-
-   if (libString2GetStringAsInt(pValue, &nValue) == S_SUCCESS)
-   {
-      return nValue;
-   }
-   return 0;
-}
-
 
 S_RESULT SMCPropParseConfigFile(char* pConfigFilename,CONF_FILE* pConfFile)
 {
@@ -592,7 +580,8 @@ S_RESULT SMCPropParseConfigFile(char* pConfigFilename,CONF_FILE* pConfFile)
    }
    else
    {
-      assert(0);
+      nError = S_ERROR_BAD_PARAMETERS;
+      goto error;
    }
 
    nError=SMCPropYacc(pFile,nFileLength,pConfFile,NULL);

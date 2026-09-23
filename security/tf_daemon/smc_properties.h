@@ -59,14 +59,6 @@ int smcPropertiesParse(const char *pConfigFile);
 char *smcGetPropertyAsString(char *pProp);
 
 
-/**
- * get the value of a property
- * @param pProp we are asking the value of this property
- * @param pVal the value of the property
- * @return 0 if found, else 1
- */
-int smcGetPropertyAsInt(char *pProp, int *pVal);
-
 
 #ifdef __cplusplus
 }

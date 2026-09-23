@@ -114,7 +114,6 @@ typedef struct
 
 uint32_t SMCPropStringToInt           (char* pValue);
 char*    SMCPropGetSystemProperty     (CONF_FILE* pConfFile, char* pPropertyName);
-uint32_t SMCPropGetSystemPropertyAsInt(CONF_FILE* pConfFile, char* pPropertyName);
 S_RESULT SMCPropParseConfigFile       (char* pConfigFilename,CONF_FILE* pConfFile);
 
 
