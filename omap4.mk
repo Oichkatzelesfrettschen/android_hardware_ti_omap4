@@ -24,7 +24,7 @@ PRODUCT_VENDOR_KERNEL_HEADERS := hardware/ti/omap4/kernel-headers
 
 # Init
 PRODUCT_COPY_FILES += \
-    $(OMAP4_NEXT_FOLDER)/rootdir/init.omap4.rc:root/init.omap4.rc
+    $(OMAP4_NEXT_FOLDER)/rootdir/init.omap4.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.omap4.rc
 
 # SGX540 is slower with the scissor optimization enabled
 PRODUCT_PROPERTY_OVERRIDES += \

@@ -24,4 +24,5 @@ LOCAL_MODULE:= tf_daemon
 LOCAL_STATIC_LIBRARIES := libtee_client_api_driver
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_EXECUTABLE)

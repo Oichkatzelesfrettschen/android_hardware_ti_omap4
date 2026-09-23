@@ -24,6 +24,7 @@ LOCAL_CFLAGS := -Wall -Werror
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libedid
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
 
 # ====================
@@ -39,4 +40,5 @@ LOCAL_SHARED_LIBRARIES:= \
 LOCAL_MODULE:= parse_hdmi_edid
 LOCAL_MODULE_TAGS:= optional
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_EXECUTABLE)

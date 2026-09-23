@@ -30,4 +30,5 @@ endif
 LOCAL_MODULE:= libmm_osal
 LOCAL_MODULE_TAGS:= optional
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)

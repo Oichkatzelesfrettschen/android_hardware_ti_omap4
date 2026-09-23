@@ -18,4 +18,5 @@ LOCAL_CFLAGS += -I $(LOCAL_PATH)/../tf_sdk/include/
 LOCAL_MODULE:= smc_pa_ctrl
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_EXECUTABLE)

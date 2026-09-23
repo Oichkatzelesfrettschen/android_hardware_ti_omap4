@@ -78,6 +78,7 @@ LOCAL_SRC_FILES := omx_sample/src/omx_proxy_sample.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.MISC.SAMPLE
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -110,6 +111,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.DECODER
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -135,6 +137,7 @@ LOCAL_SRC_FILES := omx_video_dec/src/omx_proxy_videodec_secure.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.DECODER.secure
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -171,6 +174,7 @@ endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.CAMERA
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -195,6 +199,7 @@ LOCAL_SRC_FILES := omx_video_enc/src/omx_h264_enc/src/omx_proxy_h264enc.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.H264E
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -219,6 +224,7 @@ LOCAL_SRC_FILES := omx_video_enc/src/omx_vc1_enc/src/omx_proxy_vc1enc.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.VC1E
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -243,6 +249,7 @@ LOCAL_SRC_FILES := omx_video_enc/src/omx_h264svc_enc/src/omx_proxy_h264svcenc.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.H264SVCE
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -267,6 +274,7 @@ LOCAL_SRC_FILES := omx_video_enc/src/omx_mpeg4_enc/src/omx_proxy_mpeg4enc.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.MPEG4E
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 
@@ -291,6 +299,7 @@ LOCAL_SRC_FILES := omx_video_enc/src/omx_h264_enc/src/omx_proxy_h264enc_secure.c
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libOMX.TI.DUCATI1.VIDEO.H264E.secure
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 
 FRAMEWORKS_MEDIA_BASE :=

@@ -25,4 +25,5 @@ LOCAL_MODULE:= libtf_crypto_sst
 LOCAL_STATIC_LIBRARIES := libtee_client_api_driver
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)

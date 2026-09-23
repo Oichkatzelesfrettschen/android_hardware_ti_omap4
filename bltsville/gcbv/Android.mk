@@ -57,8 +57,8 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_MODULE_TAGS    := optional
 LOCAL_MODULE         := libbltsville_gc2d
 LOCAL_MODULE_SUFFIX  := .$(BV_VERSION).so
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/../vendor/lib
 
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
 
 #Creating SymLinks

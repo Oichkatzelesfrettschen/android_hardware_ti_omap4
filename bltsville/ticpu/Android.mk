@@ -24,7 +24,7 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_MODULE := libbltsville_ticpu.$(BV_CPUVERSION)
 LOCAL_SRC_FILES := lib/android/libbltsville_ticpu.$(BV_CPUVERSION)
-LOCAL_MODULE_PATH:= $(TARGET_OUT_VENDOR)/lib
+LOCAL_VENDOR_MODULE := true
 include $(BUILD_PREBUILT)
 
 #Creating SymLinks

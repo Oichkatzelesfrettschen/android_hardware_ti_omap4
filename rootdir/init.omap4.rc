@@ -9,10 +9,10 @@ on boot
 
 on fs
     # Load PVR module
-    insmod /system/lib/modules/pvrsrvkm.ko
-    insmod /system/lib/modules/omaplfb.ko
+    insmod /vendor/lib/modules/pvrsrvkm.ko
+    insmod /vendor/lib/modules/omaplfb.ko
 
-service pvrsrvinit /system/bin/pvrsrvinit
+service pvrsrvinit /vendor/bin/pvrsrvinit
     class core
     user root
     group root
