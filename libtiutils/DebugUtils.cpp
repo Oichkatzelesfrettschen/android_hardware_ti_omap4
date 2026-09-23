@@ -23,20 +23,14 @@
 
 namespace Ti {
 
-// NOTE: This was previously taken from utils/Debug.h, however with C++11(?)
-//       it can't be used in our Ti namespace.
-//       As a workaround, make a copy here with a TI suffix.
-template<bool> struct CompileTimeAssertTi;
-template<> struct CompileTimeAssertTi<true> {};
-#define COMPILE_TIME_ASSERT_TI(_exp) \
-    template struct CompileTimeAssertTi< (_exp) >;
 
 
 // shared const buffer with spaces for indentation string
 extern const char sIndentStringBuffer[] =
         "                                                                "
         "                                                                ";
-COMPILE_TIME_ASSERT_TI(sizeof(sIndentStringBuffer) - 1 == kIndentStringMaxLength);
+static_assert(sizeof(sIndentStringBuffer) - 1 == kIndentStringMaxLength,
+              "sIndentStringBuffer holds kIndentStringMaxLength spaces");
 
 
 
