@@ -3607,11 +3607,13 @@ static IMG_UINT32 CPUAddrToTilerPhy(IMG_UINT32 uiAddr)
 	if (pmd_none(*pmd) || pmd_bad(*pmd))
 		goto err_out;
 
+	/* With CONFIG_HIGHPTE the map is a kmap_atomic() of the pte page. */
 	ptep = pte_offset_map(pmd, uiAddr);
 	if (!ptep)
 		goto err_out;
 
 	pte = *ptep;
+	pte_unmap(ptep);
 	if (!pte_present(pte))
 		goto err_out;
 
