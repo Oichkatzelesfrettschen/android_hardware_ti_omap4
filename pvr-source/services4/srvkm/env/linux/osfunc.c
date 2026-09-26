@@ -766,7 +766,14 @@ IMG_VOID OSWaitus(IMG_UINT32 ui32Timeus)
 
 IMG_VOID OSSleepms(IMG_UINT32 ui32Timems)
 {
-    msleep(ui32Timems);
+    /* msleep() rounds up to whole jiffies plus one, so with HZ=128 a 1 ms
+     * poll interval sleeps about 15.6 ms. The services poll the uKernel,
+     * the CCB and sync ops in 1 ms steps; below 20 ms an hrtimer sleep
+     * keeps that interval. */
+    if (ui32Timems < 20)
+        usleep_range(ui32Timems * 1000, ui32Timems * 1000 + 500);
+    else
+        msleep(ui32Timems);
 }
 
 
