@@ -103,6 +103,17 @@ extern struct ion_device *omap_ion_device;
 #endif /* defined(CONFIG_DRM_OMAP_DMM_TILER) */
 #include <video/dsscomp.h>
 #include <plat/dsscomp.h>
+
+/* With early_callback, dsscomp completes a flip when it programs the
+ * composition into DISPC; otherwise it completes the flip when the next
+ * composition releases it, one vsync after that one is displayed, which on
+ * tuna holds SurfaceFlinger to every other vsync. An early completion frees
+ * the previous buffers while DISPC scans them out until the next vsync;
+ * SurfaceFlinger and the apps it composites render after their vsync
+ * callback, past that point. */
+static int early_callback = 1;
+module_param(early_callback, int, 0444);
+MODULE_PARM_DESC(early_callback, "complete HWC flips when programmed rather than when released (default 1)");
 #endif /* defined(CONFIG_DSSCOMP) */
 
 #define OMAPLFB_COMMAND_COUNT		1
@@ -1230,7 +1241,7 @@ static IMG_BOOL ProcessFlipV2(IMG_HANDLE hCmdCookie,
 		apsTilerPAs[i] = asMemInfo[ix].psTilerInfo;
 	}
 
-	res = dsscomp_gralloc_queue(psDssData, apsTilerPAs, false,
+	res = dsscomp_gralloc_queue(psDssData, apsTilerPAs, early_callback != 0,
 						  (void *)psDevInfo->sPVRJTable.pfnPVRSRVCmdComplete,
 						  (void *)hCmdCookie);
 	if (res != 0)
@@ -1798,6 +1809,9 @@ static OMAPLFB_DEVINFO *OMAPLFBInitDev(unsigned uiFBDevID)
 	}
 
 	psDevInfo->sDisplayInfo.ui32MaxSwapChainBuffers = (IMG_UINT32)(psDevInfo->sFBInfo.ulFBSize / psDevInfo->sFBInfo.ulRoundedBufferSize);
+	printk(KERN_INFO DRIVER_PREFIX ": device %u: %lu byte buffers, swap chain of %u\n",
+	       psDevInfo->uiFBDevID, psDevInfo->sFBInfo.ulRoundedBufferSize,
+	       (unsigned) psDevInfo->sDisplayInfo.ui32MaxSwapChainBuffers);
 	if (psDevInfo->sDisplayInfo.ui32MaxSwapChainBuffers != 0)
 	{
 		psDevInfo->sDisplayInfo.ui32MaxSwapChains = 1;
