@@ -26,6 +26,12 @@ PRODUCT_VENDOR_KERNEL_HEADERS := hardware/ti/omap4/kernel-headers
 PRODUCT_COPY_FILES += \
     $(OMAP4_NEXT_FOLDER)/rootdir/init.omap4.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.omap4.rc
 
+# The OMX service (media.codec) appends the vendor seccomp policy to the
+# system one (main_codecservice.cpp); DOMX needs eventfd2 and pselect6, the
+# SGX user-mode driver clock_nanosleep.
+PRODUCT_COPY_FILES += \
+    $(OMAP4_NEXT_FOLDER)/seccomp/mediacodec-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy
+
 # SGX540 is slower with the scissor optimization enabled
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.hwui.disable_scissor_opt=true
