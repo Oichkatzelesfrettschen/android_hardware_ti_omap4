@@ -110,7 +110,11 @@ extern struct ion_device *omap_ion_device;
  * tuna holds SurfaceFlinger to every other vsync. An early completion frees
  * the previous buffers while DISPC scans them out until the next vsync;
  * SurfaceFlinger and the apps it composites render after their vsync
- * callback, past that point. */
+ * callback, past that point, so a producer that writes before that vsync
+ * can present a torn frame. Falsifier: a tear line during a scroll, or a
+ * torn frame in a camera capture of the panel. A launcher scroll on job 051
+ * showed no tear lines (evidence/lineage18-window3-20260926/README.md,
+ * item 3). */
 static int early_callback = 1;
 module_param(early_callback, int, 0444);
 MODULE_PARM_DESC(early_callback, "complete HWC flips when programmed rather than when released (default 1)");
