@@ -23,6 +23,8 @@
 
 #include "SensorListener.h"
 
+#include <binder/IServiceManager.h>
+
 #include <stdint.h>
 #include <math.h>
 #include <sys/types.h>
@@ -130,6 +132,17 @@ SensorListener::~SensorListener() {
 
 status_t SensorListener::initialize() {
     status_t ret = NO_ERROR;
+
+    /* SensorManager waits until sensorservice is registered with this
+     * process's service manager. The camera provider talks to
+     * vndservicemanager, where sensorservice never appears, so ask without
+     * waiting and run without orientation events when it is absent. */
+    if (android::defaultServiceManager()->checkService(
+                android::String16("sensorservice")) == NULL) {
+        CAMHAL_LOGEA("sensorservice unreachable from this process");
+        return NO_INIT;
+    }
+
 #ifdef ANDROID_API_MM_OR_LATER
     android::SensorManager& mgr(android::SensorManager::getInstanceForPackage(android::String16("TI OMAP CameraHal Module")));
 #else
