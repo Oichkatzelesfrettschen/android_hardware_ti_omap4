@@ -24,6 +24,12 @@
  *   (fence waits, power-up, CPU), so the governor returns to the lower OPP
  *   and ignores step-ups and boost windows for insensitive_hold_ms.
  *
+ * - Inside a boost window the SGX active power management latency rises
+ *   from apm_ms to burst_apm_ms, so the SGX stays powered across the gaps
+ *   inside a frame instead of powering down and back up for each job; the
+ *   latency returns to apm_ms when the window ends. It takes effect at the
+ *   next power-up from off (SGXUpdateTimingInfo()).
+ *
  * Every request passes through sgxfreq_set_freq_request(), so
  * frequency_limit (the thermal or user cap) bounds all of them.
  */
@@ -41,6 +47,7 @@
 #define BURST_PROBE_FRAMES		4
 #define BURST_DEFAULT_SENSITIVITY_PCT	15
 #define BURST_DEFAULT_INSENSITIVE_HOLD_MS	2000
+#define BURST_DEFAULT_BURST_APM_MS	20
 
 static int burst_start(struct sgxfreq_sgx_data *data);
 static void burst_stop(void);
@@ -78,6 +85,10 @@ static struct burst_data {
 	unsigned int probe_frames;
 	u64 probe_sum_us;
 	ktime_t insensitive_until;
+	unsigned int apm_ms;
+	unsigned int burst_apm_ms;
+	bool apm_raised;
+	unsigned long active_edges;
 	/* Frame busy histogram, bucket upper bounds 1, 2, 4, 8, 16, 32 ms, inf. */
 	unsigned long hist[BURST_HIST_BUCKETS];
 	struct delayed_work park_work;
@@ -93,6 +104,17 @@ static bool burst_boosted(ktime_t now)
 {
 	return ktime_to_us(ktime_sub(bd.boost_until, now)) > 0 &&
 		!burst_insensitive(now);
+}
+
+/* Holds the SGX powered through a boost window; caller holds bd.mutex. */
+static void burst_update_apm(ktime_t now)
+{
+	bool raise = ktime_to_us(ktime_sub(bd.boost_until, now)) > 0;
+
+	if (raise != bd.apm_raised) {
+		bd.apm_raised = raise;
+		sgxfreq_set_apm_latency_ms(raise ? bd.burst_apm_ms : bd.apm_ms);
+	}
 }
 
 static unsigned long burst_pick(u64 busy_us, unsigned long cur)
@@ -150,6 +172,16 @@ BURST_UINT_ATTR(park_ms, 1);
 BURST_UINT_ATTR(down_frames, 1);
 BURST_UINT_ATTR(sensitivity_pct, 0);
 BURST_UINT_ATTR(insensitive_hold_ms, 0);
+BURST_UINT_ATTR(apm_ms, 1);
+BURST_UINT_ATTR(burst_apm_ms, 1);
+
+static ssize_t show_burst_active_edges(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%lu\n", bd.active_edges);
+}
+
+static DEVICE_ATTR(active_edges, 0444, show_burst_active_edges, NULL);
 
 static ssize_t show_burst_freq(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -199,6 +231,7 @@ static ssize_t store_burst_boost_ms(struct device *dev,
 		bd.boost_until = until;
 	if (bd.active && sgxfreq_get_freq_request() < bd.burst_freq)
 		sgxfreq_set_freq_request(bd.burst_freq);
+	burst_update_apm(ktime_get());
 	mutex_unlock(&bd.mutex);
 	return count;
 }
@@ -231,6 +264,9 @@ static struct attribute *burst_attributes[] = {
 	&dev_attr_down_frames.attr,
 	&dev_attr_sensitivity_pct.attr,
 	&dev_attr_insensitive_hold_ms.attr,
+	&dev_attr_apm_ms.attr,
+	&dev_attr_burst_apm_ms.attr,
+	&dev_attr_active_edges.attr,
 	&dev_attr_burst_freq.attr,
 	&dev_attr_boost_ms.attr,
 	&dev_attr_last_frame_busy_us.attr,
@@ -278,6 +314,10 @@ static int burst_start(struct sgxfreq_sgx_data *data)
 	bd.probe_from_freq = 0;
 	bd.probe_frames = 0;
 	bd.insensitive_until = now;
+	bd.apm_ms = sgxfreq_get_apm_latency_ms();
+	bd.burst_apm_ms = BURST_DEFAULT_BURST_APM_MS;
+	bd.apm_raised = false;
+	bd.active_edges = 0;
 	memset(bd.hist, 0, sizeof(bd.hist));
 
 	sgxfreq_set_freq_request(sgxfreq_get_freq_min());
@@ -287,6 +327,7 @@ static int burst_start(struct sgxfreq_sgx_data *data)
 static void burst_stop(void)
 {
 	cancel_delayed_work_sync(&bd.park_work);
+	sgxfreq_set_apm_latency_ms(bd.apm_ms);
 	sysfs_remove_group(sgxfreq_kobj, &burst_attr_group);
 }
 
@@ -298,6 +339,8 @@ static void burst_active(void)
 	mutex_lock(&bd.mutex);
 	bd.active = true;
 	bd.active_start = now;
+	bd.active_edges++;
+	burst_update_apm(now);
 	if (burst_boosted(now) && sgxfreq_get_freq_request() < bd.burst_freq)
 		sgxfreq_set_freq_request(bd.burst_freq);
 	mutex_unlock(&bd.mutex);
@@ -334,6 +377,7 @@ static void burst_frame_done(void)
 	bd.frame_start = now;
 	bd.last_frame_busy_us = busy;
 	burst_hist_add(busy);
+	burst_update_apm(now);
 	bd.busy_ewma_us = bd.busy_ewma_us ? (3 * bd.busy_ewma_us + busy) / 4 : busy;
 
 	if (bd.probe_from_freq) {
@@ -380,6 +424,7 @@ out:
 static void burst_park(struct work_struct *work)
 {
 	mutex_lock(&bd.mutex);
+	burst_update_apm(ktime_get());
 	if (!bd.active && !burst_boosted(ktime_get())) {
 		bd.down_votes = 0;
 		sgxfreq_set_freq_request(sgxfreq_get_freq_min());

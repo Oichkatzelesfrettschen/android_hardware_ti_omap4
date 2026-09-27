@@ -98,6 +98,14 @@ unsigned long sgxfreq_set_freq_request(unsigned long freq_request);
 unsigned long sgxfreq_set_freq_limit(unsigned long freq_limit);
 
 unsigned long sgxfreq_get_total_active_time(void);
+
+/*
+ * SGX active power management latency: the idle time after which the
+ * microkernel powers the SGX down. SGXUpdateTimingInfo() reads it through
+ * SysGetSGXTimingInformation() each time the SGX powers up from off.
+ */
+unsigned int sgxfreq_get_apm_latency_ms(void);
+void sgxfreq_set_apm_latency_ms(unsigned int ms);
 unsigned long sgxfreq_get_total_idle_time(void);
 
 /* Helper functions */

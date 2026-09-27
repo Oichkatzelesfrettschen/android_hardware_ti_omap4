@@ -176,7 +176,11 @@ IMG_VOID SysGetSGXTimingInformation(SGX_TIMING_INFORMATION *psTimingInfo)
 #else
 	psTimingInfo->bEnableActivePM = IMG_FALSE;
 #endif /* SUPPORT_ACTIVE_POWER_MANAGEMENT */
+#if defined(SYS_OMAP_HAS_DVFS_FRAMEWORK)
+	psTimingInfo->ui32ActivePowManLatencyms = sgxfreq_get_apm_latency_ms();
+#else
 	psTimingInfo->ui32ActivePowManLatencyms = SYS_SGX_ACTIVE_POWER_LATENCY_MS;
+#endif
 }
 
 /*!

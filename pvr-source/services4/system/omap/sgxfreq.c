@@ -93,6 +93,18 @@ static struct sgxfreq_data {
 
 static void __account_state(void);
 
+static unsigned int sgxfreq_apm_latency_ms = SYS_SGX_ACTIVE_POWER_LATENCY_MS;
+
+unsigned int sgxfreq_get_apm_latency_ms(void)
+{
+	return ACCESS_ONCE(sgxfreq_apm_latency_ms);
+}
+
+void sgxfreq_set_apm_latency_ms(unsigned int ms)
+{
+	ACCESS_ONCE(sgxfreq_apm_latency_ms) = ms ? ms : 1;
+}
+
 /* Governor init/deinit functions */
 int onoff_init(void);
 int onoff_deinit(void);
