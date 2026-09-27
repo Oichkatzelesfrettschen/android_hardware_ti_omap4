@@ -47,7 +47,7 @@
 #define BURST_PROBE_FRAMES		4
 #define BURST_DEFAULT_SENSITIVITY_PCT	15
 #define BURST_DEFAULT_INSENSITIVE_HOLD_MS	2000
-#define BURST_DEFAULT_BURST_APM_MS	20
+#define BURST_DEFAULT_BURST_APM_MS	SYS_SGX_ACTIVE_POWER_LATENCY_MS
 
 static int burst_start(struct sgxfreq_sgx_data *data);
 static void burst_stop(void);
