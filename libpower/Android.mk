@@ -21,7 +21,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := power.omap4
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SRC_FILES := power.c
-LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_SHARED_LIBRARIES := libcutils liblog
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_CFLAGS := -Wall -Werror $(ANDROID_API_CFLAGS)

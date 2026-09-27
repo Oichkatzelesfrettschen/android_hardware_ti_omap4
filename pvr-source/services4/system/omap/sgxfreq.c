@@ -71,6 +71,9 @@ static struct sgxfreq_data {
 	struct mutex gov_mutex;
 	struct sgxfreq_sgx_data sgx_data;
 	struct device *dev;
+	/* Microseconds spent at each freq_list[] entry since sgxfreq_init(). */
+	u64 *time_in_state_us;
+	ktime_t state_since;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
 	struct gpu_platform_data *pdata;
 #else
@@ -88,6 +91,20 @@ static struct sgxfreq_data {
 #endif
 } sfd;
 
+static void __account_state(void);
+
+static unsigned int sgxfreq_apm_latency_ms = SYS_SGX_ACTIVE_POWER_LATENCY_MS;
+
+unsigned int sgxfreq_get_apm_latency_ms(void)
+{
+	return ACCESS_ONCE(sgxfreq_apm_latency_ms);
+}
+
+void sgxfreq_set_apm_latency_ms(unsigned int ms)
+{
+	ACCESS_ONCE(sgxfreq_apm_latency_ms) = ms ? ms : 1;
+}
+
 /* Governor init/deinit functions */
 int onoff_init(void);
 int onoff_deinit(void);
@@ -97,6 +114,8 @@ int on3demand_init(void);
 int on3demand_deinit(void);
 int userspace_init(void);
 int userspace_deinit(void);
+int burst_init(void);
+int burst_deinit(void);
 
 
 typedef int sgxfreq_gov_init_t(void);
@@ -105,6 +124,7 @@ sgxfreq_gov_init_t *sgxfreq_gov_init[] = {
 	activeidle_init,
 	on3demand_init,
 	userspace_init,
+	burst_init,
 	NULL,
 };
 
@@ -114,6 +134,7 @@ sgxfreq_gov_deinit_t *sgxfreq_gov_deinit[] = {
 	activeidle_deinit,
 	on3demand_deinit,
 	userspace_deinit,
+	burst_deinit,
 	NULL,
 };
 
@@ -240,7 +261,25 @@ static ssize_t store_governor(struct device *dev,
 		return count;
 }
 
+static ssize_t show_time_in_state(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	int i;
+	ssize_t count = 0;
+
+	mutex_lock(&sfd.freq_mutex);
+	__account_state();
+	for (i = 0; i < sfd.freq_cnt; i++)
+		count += sprintf(&buf[count], "%lu %llu\n", sfd.freq_list[i],
+				 sfd.time_in_state_us[i]);
+	mutex_unlock(&sfd.freq_mutex);
+
+	return count;
+}
+
 static DEVICE_ATTR(frequency_list, 0444, show_frequency_list, NULL);
+static DEVICE_ATTR(time_in_state, 0444, show_time_in_state, NULL);
 static DEVICE_ATTR(frequency_request, 0444, show_frequency_request, NULL);
 static DEVICE_ATTR(frequency_limit, 0644, show_frequency_limit, store_frequency_limit);
 static DEVICE_ATTR(frequency, 0444, show_frequency, NULL);
@@ -256,6 +295,7 @@ static const struct attribute *sgxfreq_attributes[] = {
 	&dev_attr_governor_list.attr,
 	&dev_attr_governor.attr,
 	&dev_attr_stat.attr,
+	&dev_attr_time_in_state.attr,
 	NULL
 };
 
@@ -316,6 +356,22 @@ static unsigned long __sgxfreq_get_max_safe_freq(void)
 	return reference_freq;
 }
 
+/* Adds the time since the last change to the entry of the current OPP; caller holds freq_mutex. */
+static void __account_state(void)
+{
+	ktime_t now = ktime_get();
+	int i;
+
+	for (i = 0; i < sfd.freq_cnt; i++) {
+		if (sfd.freq_list[i] == sfd.freq) {
+			sfd.time_in_state_us[i] +=
+				ktime_us_delta(now, sfd.state_since);
+			break;
+		}
+	}
+	sfd.state_since = now;
+}
+
 static int __set_freq(void)
 {
 	unsigned long freq;
@@ -364,6 +420,7 @@ static int __set_freq(void)
 #else
 		sfd.pdata->device_scale(sfd.dev, freq);
 #endif
+		__account_state();
 		sfd.freq = freq;
 
 		goto noerr;
@@ -607,6 +664,13 @@ int sgxfreq_init(struct device *dev)
 	}
 #endif
 
+	sfd.time_in_state_us = kzalloc(sfd.freq_cnt * sizeof(u64), GFP_KERNEL);
+	if (!sfd.time_in_state_us) {
+		kfree(sfd.freq_list);
+		return -ENOMEM;
+	}
+	sfd.state_since = ktime_get();
+
 	mutex_init(&sfd.freq_mutex);
 	sfd.freq_limit = __sgxfreq_get_max_safe_freq();
 	sgxfreq_set_freq_request(sfd.freq_list[sfd.freq_cnt - 1]);
@@ -659,6 +723,7 @@ int sgxfreq_deinit(void)
 	sysfs_remove_files(sgxfreq_kobj, sgxfreq_attributes);
 	kobject_put(sgxfreq_kobj);
 
+	kfree(sfd.time_in_state_us);
 	kfree(sfd.freq_list);
 
 	return 0;
