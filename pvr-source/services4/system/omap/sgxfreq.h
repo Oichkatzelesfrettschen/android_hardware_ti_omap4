@@ -44,6 +44,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/device.h>
 #include <linux/time.h>
+#include <linux/hrtimer.h>
+#include <linux/ktime.h>
 
 #define SGXFREQ_NAME_LEN 16
 
