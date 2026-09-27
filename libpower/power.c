@@ -27,6 +27,7 @@
 
 #define LOG_TAG "TI OMAP PowerHAL"
 #include <utils/Log.h>
+#include <cutils/properties.h>
 
 #include <hardware/hardware.h>
 #include <hardware/power.h>
@@ -52,6 +53,16 @@
 #define BOOST_MAX_MS 2000
 #define LAUNCH_BOOST_MS 2000
 
+/*
+ * vendor.power.boost_domains, read at HAL init, selects the boost domains so
+ * each one's latency and idle-power effect is measured alone on one build.
+ */
+#define BOOST_DOMAIN_CPU 1
+#define BOOST_DOMAIN_GPU 2
+#define BOOST_DOMAIN_CPUIDLE 4
+#define BOOST_DOMAINS_PROP "vendor.power.boost_domains"
+#define BOOST_DOMAINS_DEFAULT (BOOST_DOMAIN_CPU | BOOST_DOMAIN_GPU | BOOST_DOMAIN_CPUIDLE)
+
 #define MAX_FREQ_NUMBER 10
 #define NOM_FREQ_INDEX 3
 #define FREQ_BUF_SIZE 10
@@ -74,6 +85,7 @@ struct omap_power_module {
     int boost_thread_started;
     pthread_cond_t boost_cond;
     struct timespec boost_until;
+    int boost_domains;
     char sgx_limit[FREQ_BUF_SIZE];
     char sgx_min[FREQ_BUF_SIZE];
 };
@@ -197,10 +209,12 @@ static void omap_power_boost(struct omap_power_module *omap_device, int ms)
 
     pthread_mutex_lock(&omap_device->lock);
 
-    if (omap_device->boostpulse_fd >= 0)
+    if ((omap_device->boost_domains & BOOST_DOMAIN_CPU) &&
+        omap_device->boostpulse_fd >= 0)
         len = write(omap_device->boostpulse_fd, "1", 1);
 
-    if (omap_device->sgx_boost_fd >= 0) {
+    if ((omap_device->boost_domains & BOOST_DOMAIN_GPU) &&
+        omap_device->sgx_boost_fd >= 0) {
         len = snprintf(buf, sizeof(buf), "%d", ms);
         len = write(omap_device->sgx_boost_fd, buf, len);
     }
@@ -216,7 +230,8 @@ static void omap_power_boost(struct omap_power_module *omap_device, int ms)
     if (timespec_after(&until, &omap_device->boost_until))
         omap_device->boost_until = until;
 
-    if (omap_device->qos_fd < 0) {
+    if ((omap_device->boost_domains & BOOST_DOMAIN_CPUIDLE) &&
+        omap_device->qos_fd < 0) {
         omap_device->qos_fd = open(CPU_DMA_LATENCY_PATH, O_WRONLY | O_CLOEXEC);
         if (omap_device->qos_fd >= 0 &&
             write(omap_device->qos_fd, &qos, sizeof(qos)) != sizeof(qos)) {
@@ -259,10 +274,12 @@ static void omap_power_init_boost(struct omap_power_module *omap_device)
             free(tok[n]);
     }
 
+    omap_device->boost_domains = property_get_int32(BOOST_DOMAINS_PROP,
+                                                    BOOST_DOMAINS_DEFAULT);
     omap_device->boostpulse_fd = open(BOOSTPULSE_PATH, O_WRONLY | O_CLOEXEC);
     omap_device->sgx_boost_fd = open(SGX_BOOST_PATH, O_WRONLY | O_CLOEXEC);
-    ALOGI("boost domains: cpu %s, gpu %s", omap_device->boostpulse_fd >= 0 ?
-          "on" : "off", omap_device->sgx_boost_fd >= 0 ? "on" : "off");
+    ALOGI("boost domains 0x%x: cpu fd %d, gpu fd %d", omap_device->boost_domains,
+          omap_device->boostpulse_fd, omap_device->sgx_boost_fd);
 
     pthread_condattr_init(&attr);
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
