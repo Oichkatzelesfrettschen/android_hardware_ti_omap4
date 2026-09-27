@@ -18,6 +18,12 @@
  *   drops to the lowest OPP, which also lets the CORE voltage domain return
  *   to OPP50.
  *
+ * - An up-step must pay off: within BURST_PROBE_FRAMES frames the smoothed
+ *   frame busy time has to fall by at least sensitivity_pct percent. When it
+ *   does not, the frame is bound by something other than the SGX clock
+ *   (fence waits, power-up, CPU), so the governor returns to the lower OPP
+ *   and ignores step-ups and boost windows for insensitive_hold_ms.
+ *
  * Every request passes through sgxfreq_set_freq_request(), so
  * frequency_limit (the thermal or user cap) bounds all of them.
  */
@@ -32,6 +38,9 @@
 #define BURST_DEFAULT_DOWN_FRAMES	3
 #define BURST_MIN_FRAME_US		2000
 #define BURST_HIST_BUCKETS		7
+#define BURST_PROBE_FRAMES		4
+#define BURST_DEFAULT_SENSITIVITY_PCT	15
+#define BURST_DEFAULT_INSENSITIVE_HOLD_MS	2000
 
 static int burst_start(struct sgxfreq_sgx_data *data);
 static void burst_stop(void);
@@ -61,15 +70,29 @@ static struct burst_data {
 	u64 frame_busy_us;
 	u64 last_frame_busy_us;
 	unsigned int down_votes;
+	unsigned int sensitivity_pct;
+	unsigned int insensitive_hold_ms;
+	u64 busy_ewma_us;
+	unsigned long probe_from_freq;
+	u64 probe_from_busy_us;
+	unsigned int probe_frames;
+	u64 probe_sum_us;
+	ktime_t insensitive_until;
 	/* Frame busy histogram, bucket upper bounds 1, 2, 4, 8, 16, 32 ms, inf. */
 	unsigned long hist[BURST_HIST_BUCKETS];
 	struct delayed_work park_work;
 	struct mutex mutex;
 } bd;
 
+static bool burst_insensitive(ktime_t now)
+{
+	return ktime_to_us(ktime_sub(bd.insensitive_until, now)) > 0;
+}
+
 static bool burst_boosted(ktime_t now)
 {
-	return ktime_to_us(ktime_sub(bd.boost_until, now)) > 0;
+	return ktime_to_us(ktime_sub(bd.boost_until, now)) > 0 &&
+		!burst_insensitive(now);
 }
 
 static unsigned long burst_pick(u64 busy_us, unsigned long cur)
@@ -125,6 +148,8 @@ static DEVICE_ATTR(field, 0644, show_burst_##field, store_burst_##field)
 BURST_UINT_ATTR(target_busy_us, 500);
 BURST_UINT_ATTR(park_ms, 1);
 BURST_UINT_ATTR(down_frames, 1);
+BURST_UINT_ATTR(sensitivity_pct, 0);
+BURST_UINT_ATTR(insensitive_hold_ms, 0);
 
 static ssize_t show_burst_freq(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -204,6 +229,8 @@ static struct attribute *burst_attributes[] = {
 	&dev_attr_target_busy_us.attr,
 	&dev_attr_park_ms.attr,
 	&dev_attr_down_frames.attr,
+	&dev_attr_sensitivity_pct.attr,
+	&dev_attr_insensitive_hold_ms.attr,
 	&dev_attr_burst_freq.attr,
 	&dev_attr_boost_ms.attr,
 	&dev_attr_last_frame_busy_us.attr,
@@ -245,6 +272,12 @@ static int burst_start(struct sgxfreq_sgx_data *data)
 	bd.frame_busy_us = 0;
 	bd.last_frame_busy_us = 0;
 	bd.down_votes = 0;
+	bd.sensitivity_pct = BURST_DEFAULT_SENSITIVITY_PCT;
+	bd.insensitive_hold_ms = BURST_DEFAULT_INSENSITIVE_HOLD_MS;
+	bd.busy_ewma_us = 0;
+	bd.probe_from_freq = 0;
+	bd.probe_frames = 0;
+	bd.insensitive_until = now;
 	memset(bd.hist, 0, sizeof(bd.hist));
 
 	sgxfreq_set_freq_request(sgxfreq_get_freq_min());
@@ -301,6 +334,22 @@ static void burst_frame_done(void)
 	bd.frame_start = now;
 	bd.last_frame_busy_us = busy;
 	burst_hist_add(busy);
+	bd.busy_ewma_us = bd.busy_ewma_us ? (3 * bd.busy_ewma_us + busy) / 4 : busy;
+
+	if (bd.probe_from_freq) {
+		bd.probe_sum_us += busy;
+		if (++bd.probe_frames >= BURST_PROBE_FRAMES) {
+			/* Keep the higher OPP only when busy fell by sensitivity_pct. */
+			if (bd.probe_sum_us * 100 > (u64)BURST_PROBE_FRAMES *
+			    bd.probe_from_busy_us * (100 - bd.sensitivity_pct)) {
+				bd.insensitive_until = ktime_add_ns(now,
+					(u64)bd.insensitive_hold_ms * NSEC_PER_MSEC);
+				sgxfreq_set_freq_request(bd.probe_from_freq);
+			}
+			bd.probe_from_freq = 0;
+		}
+		goto out;
+	}
 
 	cur = sgxfreq_get_freq();
 	want = burst_pick(busy, cur ? cur : sgxfreq_get_freq_min());
@@ -309,6 +358,12 @@ static void burst_frame_done(void)
 
 	if (want > sgxfreq_get_freq_request()) {
 		bd.down_votes = 0;
+		if (burst_insensitive(now))
+			goto out;
+		bd.probe_from_freq = sgxfreq_get_freq_request();
+		bd.probe_from_busy_us = bd.busy_ewma_us;
+		bd.probe_frames = 0;
+		bd.probe_sum_us = 0;
 		sgxfreq_set_freq_request(want);
 	} else if (want < sgxfreq_get_freq_request()) {
 		if (++bd.down_votes >= bd.down_frames) {
