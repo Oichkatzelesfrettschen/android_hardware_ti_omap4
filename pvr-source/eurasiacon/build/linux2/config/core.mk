@@ -230,7 +230,7 @@ _CC		:= $(if $(filter default,$(origin CC)),gcc,$(CC))
 _CLANG	:= \
  $(shell $(TOP)/eurasiacon/build/linux2/tools/cc-check.sh --clang --cc $(_CC))
 ifeq ($(_CLANG),true)
-_CC		:= $(_CC) -target $(patsubst %-,%,$(CROSS_COMPILE))
+_CC		:= $(_CC) -target $(patsubst arm-linux-androidkernel,arm-linux-androideabi,$(patsubst %-,%,$(notdir $(CROSS_COMPILE))))
 else
 _CC		:= $(CROSS_COMPILE)$(_CC)
 endif
