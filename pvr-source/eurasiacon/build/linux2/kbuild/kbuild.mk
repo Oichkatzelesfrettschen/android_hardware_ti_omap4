@@ -51,10 +51,10 @@ INTERNAL_KBUILD_MAKEFILES := $(abspath $(foreach _m,$(KERNEL_COMPONENTS) $(EXTRA
 INTERNAL_KBUILD_OBJECTS := $(foreach _m,$(KERNEL_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
 INTERNAL_EXTRA_KBUILD_OBJECTS := $(foreach _m,$(EXTRA_PVRSRVKM_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
 ifneq ($(strip $(LLVM)),)
-$(foreach tool,CC LD AR NM OBJCOPY OBJDUMP STRIP,$(if $(strip $(KERNEL_$(tool))),,$(error LLVM requires KERNEL_$(tool) from the product SGX recipe)))
-KERNEL_LLVM_TOOLS := LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS) \
-	CC=$(KERNEL_CC) LD=$(KERNEL_LD) AR=$(KERNEL_AR) NM=$(KERNEL_NM) \
-	OBJCOPY=$(KERNEL_OBJCOPY) OBJDUMP=$(KERNEL_OBJDUMP) STRIP=$(KERNEL_STRIP)
+# The DDK receives CC and other tools on its command line. GNU make would
+# pass those raw values into Kbuild's inner makes, bypassing the kernel's
+# target flags. Let the kernel select and export its own LLVM tools.
+KERNEL_LLVM_TOOLS := MAKEOVERRIDES= LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS)
 endif
 .PHONY: kbuild kbuild_clean
 
