@@ -252,7 +252,8 @@ static PVRSRV_ERROR OpenDCDevice(IMG_UINT32 uiPVRDevID,
                                  PVRSRV_SYNC_DATA* psSystemBufferSyncData)
 {
 	OMAPLFB_DEVINFO *psDevInfo;
-	OMAPLFB_ERROR eError;
+	PVRSRV_ERROR eError;
+	OMAPLFB_ERROR eUnblankError;
 	unsigned uiMaxFBDevIDPlusOne;
 	unsigned i;
 
@@ -282,11 +283,11 @@ static PVRSRV_ERROR OpenDCDevice(IMG_UINT32 uiPVRDevID,
 	/* store the system surface sync data */
 	psDevInfo->sSystemBuffer.psSyncData = psSystemBufferSyncData;
 	
-	eError = OMAPLFBUnblankDisplay(psDevInfo);
-	if (eError != OMAPLFB_OK)
+	eUnblankError = OMAPLFBUnblankDisplay(psDevInfo);
+	if (eUnblankError != OMAPLFB_OK)
 	{
 		DEBUG_PRINTK((KERN_WARNING DRIVER_PREFIX
-			": %s: Device %u: OMAPLFBUnblankDisplay failed (%d)\n", __FUNCTION__, psDevInfo->uiFBDevID, eError));
+			": %s: Device %u: OMAPLFBUnblankDisplay failed (%d)\n", __FUNCTION__, psDevInfo->uiFBDevID, eUnblankError));
 		eError = PVRSRV_ERROR_UNBLANK_DISPLAY_FAILED;
 		goto ErrorModulePut;
 	}
@@ -726,7 +727,8 @@ static PVRSRV_ERROR DestroyDCSwapChain(IMG_HANDLE hDevice,
 {
 	OMAPLFB_DEVINFO	*psDevInfo;
 	OMAPLFB_SWAPCHAIN *psSwapChain;
-	OMAPLFB_ERROR eError;
+	PVRSRV_ERROR eError;
+	OMAPLFB_ERROR eNotificationError;
 
 	/* Check parameters */
 	if(!hDevice || !hSwapChain)
@@ -751,8 +753,8 @@ static PVRSRV_ERROR DestroyDCSwapChain(IMG_HANDLE hDevice,
 	/* The swap queue is flushed before being destroyed */
 	OMAPLFBDestroySwapQueue(psSwapChain);
 
-	eError = OMAPLFBDisableLFBEventNotification(psDevInfo);
-	if (eError != OMAPLFB_OK)
+	eNotificationError = OMAPLFBDisableLFBEventNotification(psDevInfo);
+	if (eNotificationError != OMAPLFB_OK)
 	{
 		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Couldn't disable framebuffer event notification\n", __FUNCTION__, psDevInfo->uiFBDevID);
 	}
