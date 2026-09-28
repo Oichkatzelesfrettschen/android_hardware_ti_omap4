@@ -125,7 +125,7 @@ $(call cc-check,$(patsubst @%,%,$(HOST_CXX)),$(OUT),$(1))
 endef
 
 define kernel-cc-option
-$(call cc-check,$(KERNEL_CROSS_COMPILE)gcc,$(OUT),$(1))
+$(call cc-check,$(if $(strip $(LLVM)),$(KERNEL_CC) -Werror=unknown-warning-option,$(KERNEL_CROSS_COMPILE)gcc),$(OUT),$(1))
 endef
 
 # Turn a particular warning on, or explicitly turn it off, depending on
