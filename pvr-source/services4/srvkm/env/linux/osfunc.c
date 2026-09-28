@@ -3629,7 +3629,7 @@ static IMG_UINT32 CPUAddrToTilerPhy(IMG_UINT32 uiAddr)
 	/* If the physAddr is not in the TILER physical range
 	 * then we don't proceed.
 	 */
-	if (ui32PhysAddr < 0x60000000 && ui32PhysAddr > 0x7fffffff)
+	if (ui32PhysAddr < 0x60000000 || ui32PhysAddr > 0x7fffffff)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "CPUAddrToTilerPhy: Not in tiler range"));
 		ui32PhysAddr = 0;
