@@ -55,11 +55,16 @@ ifneq ($(strip $(LLVM)),)
 # pass those raw values into Kbuild's inner makes, bypassing the kernel's
 # target flags. Let the kernel select and export its own LLVM tools.
 KERNEL_LLVM_TOOLS := MAKEOVERRIDES= LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS)
+KERNEL_LLVM_ENV := KBUILD_EXTMOD="$(abspath $(TARGET_OUT)/kbuild)" \
+	INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
+	INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
+	INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
+	EXTRA_KBUILD_SOURCE="$(EXTRA_KBUILD_SOURCE)"
 endif
 .PHONY: kbuild kbuild_clean
 
 kbuild: $(TARGET_OUT)/kbuild/Makefile
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -74,7 +79,7 @@ kbuild: $(TARGET_OUT)/kbuild/Makefile
 	done
 
 kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -87,7 +92,7 @@ kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
 
 kbuild_install: $(TARGET_OUT)/kbuild/Makefile
 	@: $(if $(strip $(DISCIMAGE)),,$(error $$(DISCIMAGE) was empty or unset while trying to use it to set INSTALL_MOD_PATH for modules_install))
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
