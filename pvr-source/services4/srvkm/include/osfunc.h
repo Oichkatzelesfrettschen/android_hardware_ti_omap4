@@ -727,6 +727,12 @@ static inline IMG_VOID OSMemoryBarrier(IMG_VOID)
 	mb();
 }
 
+/* Every memory operand after this point is re-read from memory. */
+static inline IMG_VOID OSCompilerBarrier(IMG_VOID)
+{
+	barrier();
+}
+
 #else /* defined(__linux__) && defined(__KERNEL__) */
 
 #ifdef INLINE_IS_PRAGMA
@@ -738,6 +744,15 @@ static INLINE IMG_VOID OSWriteMemoryBarrier(IMG_VOID) { }
 #pragma inline(OSMemoryBarrier)
 #endif
 static INLINE IMG_VOID OSMemoryBarrier(IMG_VOID) { }
+
+#ifdef INLINE_IS_PRAGMA
+#pragma inline(OSCompilerBarrier)
+#endif
+#if defined(__GNUC__)
+static INLINE IMG_VOID OSCompilerBarrier(IMG_VOID) { __asm__ __volatile__("" : : : "memory"); }
+#else
+static INLINE IMG_VOID OSCompilerBarrier(IMG_VOID) { }
+#endif
 
 #endif /* defined(__linux__) && defined(__KERNEL__) */
 
