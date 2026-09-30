@@ -220,10 +220,10 @@ override CC_CHECK	:= $(if $(V),,@)$(MAKE_TOP)/tools/cc-check.sh
 ifneq ($(CROSS_COMPILE),)
 ifeq ($(cc-is-clang),true)
 override CC  := $(if $(V),,@)$(CC) \
- -target $(patsubst %-,%,$(CROSS_COMPILE)) \
+ -target $(patsubst arm-linux-androidkernel,arm-linux-androideabi,$(patsubst %-,%,$(notdir $(CROSS_COMPILE)))) \
  -B$(dir $(shell which $(CROSS_COMPILE)gcc))
 override CXX := $(if $(V),,@)$(CXX) \
- -target $(patsubst %-,%,$(CROSS_COMPILE)) \
+ -target $(patsubst arm-linux-androidkernel,arm-linux-androideabi,$(patsubst %-,%,$(notdir $(CROSS_COMPILE)))) \
  -B$(dir $(shell which $(CROSS_COMPILE)gcc))
 else
 override CC  := $(if $(V),,@)$(CROSS_COMPILE)$(CC)
@@ -234,7 +234,11 @@ override CC  := $(if $(V),,@)$(CC)
 override CXX := $(if $(V),,@)$(CXX)
 endif
 
+ifeq ($(LLVM),)
 override AR			:= $(if $(V),,@)$(CROSS_COMPILE)ar
+else
+override AR			:= $(if $(V),,@)$(AR)
+endif
 override BISON			:= $(if $(V),,@)$(BISON)
 override BZIP2			:= $(if $(V),,@)bzip2 -9
 override CP			:= $(if $(V),,@)cp
@@ -254,12 +258,24 @@ override LN			:= $(if $(V),,@)ln -f
 override M4			:= $(if $(V),,@)m4
 override MKDIR			:= $(if $(V),,@)mkdir
 override MV			:= $(if $(V),,@)mv
+ifeq ($(LLVM),)
 override OBJCOPY		:= $(if $(V),,@)$(CROSS_COMPILE)objcopy
+else
+override OBJCOPY		:= $(if $(V),,@)$(OBJCOPY)
+endif
 override PDSASM			:= $(if $(V),,@)$(HOST_OUT)/pdsasm
+ifeq ($(LLVM),)
 override RANLIB			:= $(if $(V),,@)$(CROSS_COMPILE)ranlib
+else
+override RANLIB			:= $(if $(V),,@)$(RANLIB)
+endif
 override RM			:= $(if $(V),,@)rm -f
 override SED			:= $(if $(V),,@)sed
+ifeq ($(LLVM),)
 override STRIP			:= $(if $(V),,@)$(CROSS_COMPILE)strip
+else
+override STRIP			:= $(if $(V),,@)$(STRIP)
+endif
 override TAR			:= $(if $(V),,@)tar
 override TOUCH			:= $(if $(V),,@)touch
 override USEASM			:= $(if $(V),,@)$(HOST_OUT)/useasm

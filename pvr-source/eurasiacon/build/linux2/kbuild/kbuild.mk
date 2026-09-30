@@ -50,6 +50,12 @@ $(TARGET_OUT)/kbuild/Makefile: $(MAKE_TOP)/kbuild/Makefile.template
 INTERNAL_KBUILD_MAKEFILES := $(abspath $(foreach _m,$(KERNEL_COMPONENTS) $(EXTRA_PVRSRVKM_COMPONENTS),$(if $(INTERNAL_KBUILD_MAKEFILE_FOR_$(_m)),$(INTERNAL_KBUILD_MAKEFILE_FOR_$(_m)),$(error Unknown kbuild module "$(_m)"))))
 INTERNAL_KBUILD_OBJECTS := $(foreach _m,$(KERNEL_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
 INTERNAL_EXTRA_KBUILD_OBJECTS := $(foreach _m,$(EXTRA_PVRSRVKM_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
+ifneq ($(strip $(LLVM)),)
+$(foreach tool,CC LD AR NM OBJCOPY OBJDUMP STRIP,$(if $(strip $(KERNEL_$(tool))),,$(error LLVM requires KERNEL_$(tool) from the product SGX recipe)))
+KERNEL_LLVM_TOOLS := LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS) \
+	CC=$(KERNEL_CC) LD=$(KERNEL_LD) AR=$(KERNEL_AR) NM=$(KERNEL_NM) \
+	OBJCOPY=$(KERNEL_OBJCOPY) OBJDUMP=$(KERNEL_OBJDUMP) STRIP=$(KERNEL_STRIP)
+endif
 .PHONY: kbuild kbuild_clean
 
 kbuild: $(TARGET_OUT)/kbuild/Makefile
@@ -59,6 +65,7 @@ kbuild: $(TARGET_OUT)/kbuild/Makefile
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
 		EXTRA_KBUILD_SOURCE="$(EXTRA_KBUILD_SOURCE)" \
 		CROSS_COMPILE="$(KERNEL_CROSS_COMPILE)" \
+		$(KERNEL_LLVM_TOOLS) \
 		EXTRA_CFLAGS="$(ALL_KBUILD_CFLAGS)" \
 		V=$(V) W=$(W) \
 		TOP=$(TOP)
@@ -73,6 +80,7 @@ kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
 		EXTRA_KBUILD_SOURCE="$(EXTRA_KBUILD_SOURCE)" \
 		CROSS_COMPILE="$(KERNEL_CROSS_COMPILE)" \
+		$(KERNEL_LLVM_TOOLS) \
 		EXTRA_CFLAGS="$(ALL_KBUILD_CFLAGS)" \
 		V=$(V) W=$(W) \
 		TOP=$(TOP) clean
@@ -85,6 +93,7 @@ kbuild_install: $(TARGET_OUT)/kbuild/Makefile
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
 		EXTRA_KBUILD_SOURCE="$(EXTRA_KBUILD_SOURCE)" \
 		CROSS_COMPILE="$(KERNEL_CROSS_COMPILE)" \
+		$(KERNEL_LLVM_TOOLS) \
 		EXTRA_CFLAGS="$(ALL_KBUILD_CFLAGS)" \
 		INSTALL_MOD_PATH="$(DISCIMAGE)" \
 		V=$(V) W=$(W) \
