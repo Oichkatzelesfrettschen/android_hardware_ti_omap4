@@ -226,8 +226,9 @@ override CXX := $(if $(V),,@)$(CXX) \
  -target $(patsubst arm-linux-androidkernel,arm-linux-androideabi,$(patsubst %-,%,$(notdir $(CROSS_COMPILE)))) \
  -B$(dir $(shell which $(CROSS_COMPILE)gcc))
 else
-override CC  := $(if $(V),,@)$(CROSS_COMPILE)$(CC)
-override CXX := $(if $(V),,@)$(CROSS_COMPILE)$(CXX)
+# Absolute compiler commands already select their cross toolchain.
+override CC  := $(if $(V),,@)$(if $(filter /%,$(CC)),$(CC),$(CROSS_COMPILE)$(CC))
+override CXX := $(if $(V),,@)$(if $(filter /%,$(CXX)),$(CXX),$(CROSS_COMPILE)$(CXX))
 endif
 else
 override CC  := $(if $(V),,@)$(CC)

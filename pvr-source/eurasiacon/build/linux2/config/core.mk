@@ -232,7 +232,9 @@ _CLANG	:= \
 ifeq ($(_CLANG),true)
 _CC		:= $(_CC) -target $(patsubst arm-linux-androidkernel,arm-linux-androideabi,$(patsubst %-,%,$(notdir $(CROSS_COMPILE))))
 else
+ifeq ($(filter /%,$(_CC)),)
 _CC		:= $(CROSS_COMPILE)$(_CC)
+endif
 endif
 HOST_CC	?= gcc
 
