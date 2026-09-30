@@ -245,13 +245,18 @@ LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
  * 	it will be decremented and the loop executed one final time. This is necessary
  *	when preemption is enabled. 
  */
-/* PRQA S 3411,3431 12 */ /* critical format, leave alone */
+/*	Each iteration passes OSCompilerBarrier(), so a body that polls memory the
+ *	device writes re-reads it every time even after OSClockus() is inlined
+ *	to a plain jiffies load.
+ */
+/* PRQA S 3411,3431 13 */ /* critical format, leave alone */
 #define LOOP_UNTIL_TIMEOUT(TIMEOUT) \
 {\
 	IMG_UINT32 uiOffset, uiStart, uiCurrent; \
 	IMG_INT32 iNotLastLoop;					 \
 	for(uiOffset = 0, uiStart = OSClockus(), uiCurrent = uiStart + 1, iNotLastLoop = 1;\
 		((uiCurrent - uiStart + uiOffset) < (TIMEOUT)) || iNotLastLoop--;				\
+		OSCompilerBarrier(),														\
 		uiCurrent = OSClockus(),													\
 		uiOffset = uiCurrent < uiStart ? IMG_UINT32_MAX - uiStart : uiOffset,		\
 		uiStart = uiCurrent < uiStart ? 0 : uiStart)
