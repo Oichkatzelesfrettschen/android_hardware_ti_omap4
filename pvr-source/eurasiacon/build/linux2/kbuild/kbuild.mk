@@ -51,15 +51,20 @@ INTERNAL_KBUILD_MAKEFILES := $(abspath $(foreach _m,$(KERNEL_COMPONENTS) $(EXTRA
 INTERNAL_KBUILD_OBJECTS := $(foreach _m,$(KERNEL_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
 INTERNAL_EXTRA_KBUILD_OBJECTS := $(foreach _m,$(EXTRA_PVRSRVKM_COMPONENTS),$(if $(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(INTERNAL_KBUILD_OBJECTS_FOR_$(_m)),$(error BUG: Unknown kbuild module "$(_m)" should have been caught earlier)))
 ifneq ($(strip $(LLVM)),)
-$(foreach tool,CC LD AR NM OBJCOPY OBJDUMP STRIP,$(if $(strip $(KERNEL_$(tool))),,$(error LLVM requires KERNEL_$(tool) from the product SGX recipe)))
-KERNEL_LLVM_TOOLS := LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS) \
-	CC=$(KERNEL_CC) LD=$(KERNEL_LD) AR=$(KERNEL_AR) NM=$(KERNEL_NM) \
-	OBJCOPY=$(KERNEL_OBJCOPY) OBJDUMP=$(KERNEL_OBJDUMP) STRIP=$(KERNEL_STRIP)
+# The DDK receives CC and other tools on its command line. GNU make would
+# pass those raw values into Kbuild's inner makes, bypassing the kernel's
+# target flags. Let the kernel select and export its own LLVM tools.
+KERNEL_LLVM_TOOLS := MAKEOVERRIDES= LLVM=$(LLVM) LLVM_IAS=$(LLVM_IAS)
+KERNEL_LLVM_ENV := KBUILD_EXTMOD="$(abspath $(TARGET_OUT)/kbuild)" \
+	INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
+	INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
+	INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
+	EXTRA_KBUILD_SOURCE="$(EXTRA_KBUILD_SOURCE)"
 endif
 .PHONY: kbuild kbuild_clean
 
 kbuild: $(TARGET_OUT)/kbuild/Makefile
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -74,7 +79,7 @@ kbuild: $(TARGET_OUT)/kbuild/Makefile
 	done
 
 kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -87,7 +92,7 @@ kbuild_clean: $(TARGET_OUT)/kbuild/Makefile
 
 kbuild_install: $(TARGET_OUT)/kbuild/Makefile
 	@: $(if $(strip $(DISCIMAGE)),,$(error $$(DISCIMAGE) was empty or unset while trying to use it to set INSTALL_MOD_PATH for modules_install))
-	@$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
+	@$(KERNEL_LLVM_ENV) $(MAKE) -Rr --no-print-directory -C $(KERNELDIR) M=$(abspath $(TARGET_OUT)/kbuild) \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
