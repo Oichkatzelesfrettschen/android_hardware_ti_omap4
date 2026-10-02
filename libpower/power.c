@@ -44,6 +44,22 @@
 #define CPU_DMA_LATENCY_PATH "/dev/cpu_dma_latency"
 
 /*
+ * The tuna kernel's earlysuspend state machine owns display blanking: the
+ * suspend HAL's "mem" write to POWER_STATE_PATH runs dsscomp_early_suspend(),
+ * which drops every composition until dsscomp_late_resume(), and late resume
+ * runs only on an "on" write. PowerManagerService, with interactive and
+ * auto-suspend coupled to the display, disables auto-suspend and calls
+ * setInteractive(true) before SurfaceFlinger powers the display, so the "on"
+ * write belongs here. fbearlysuspend resumes last among the handlers; its
+ * wait_for_fb_wake read returns once every late-resume handler has run.
+ * FB_WAKE_TIMEOUT_MS bounds the wait so a stalled handler cannot hold
+ * PowerManagerService's lock.
+ */
+#define POWER_STATE_PATH "/sys/power/state"
+#define WAIT_FOR_FB_WAKE_PATH "/sys/power/wait_for_fb_wake"
+#define FB_WAKE_TIMEOUT_MS 1000
+
+/*
  * OMAP4 C2-C4 exit in 1.1-1.5 ms (cpuidle44xx.c); a PM QoS bound below that
  * keeps both CPUs in C1 (WFI, 4 us exit) for the length of a boost, so a
  * vsync or input wakeup runs at once.
@@ -350,6 +366,71 @@ static int boostpulse_open(struct omap_power_module *omap_device)
     return omap_device->boostpulse_fd;
 }
 
+static pthread_mutex_t fb_wake_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t fb_wake_cond = PTHREAD_COND_INITIALIZER;
+static unsigned int fb_wake_count;
+
+static void *fb_wake_reader(void *arg)
+{
+    char buf[16];
+    int fd = open(WAIT_FOR_FB_WAKE_PATH, O_RDONLY);
+
+    (void)arg;
+    if (fd >= 0) {
+        if (read(fd, buf, sizeof(buf)) < 0)
+            ALOGE("Error reading %s: %s\n", WAIT_FOR_FB_WAKE_PATH, strerror(errno));
+        close(fd);
+    } else {
+        ALOGE("Error opening %s: %s\n", WAIT_FOR_FB_WAKE_PATH, strerror(errno));
+    }
+
+    pthread_mutex_lock(&fb_wake_lock);
+    fb_wake_count++;
+    pthread_cond_broadcast(&fb_wake_cond);
+    pthread_mutex_unlock(&fb_wake_lock);
+    return NULL;
+}
+
+static void omap_power_late_resume(void)
+{
+    pthread_attr_t attr;
+    pthread_t thread;
+    struct timespec deadline;
+    unsigned int target;
+    int rc = 0;
+
+    sysfs_write(POWER_STATE_PATH, "on");
+
+    pthread_mutex_lock(&fb_wake_lock);
+    target = fb_wake_count + 1;
+    pthread_mutex_unlock(&fb_wake_lock);
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    rc = pthread_create(&thread, &attr, fb_wake_reader, NULL);
+    pthread_attr_destroy(&attr);
+    if (rc) {
+        ALOGE("Error starting the late-resume wait: %s\n", strerror(rc));
+        return;
+    }
+
+    clock_gettime(CLOCK_REALTIME, &deadline);
+    deadline.tv_sec += FB_WAKE_TIMEOUT_MS / 1000;
+    deadline.tv_nsec += (FB_WAKE_TIMEOUT_MS % 1000) * 1000000L;
+    if (deadline.tv_nsec >= 1000000000L) {
+        deadline.tv_sec++;
+        deadline.tv_nsec -= 1000000000L;
+    }
+
+    pthread_mutex_lock(&fb_wake_lock);
+    while ((int)(fb_wake_count - target) < 0 && rc != ETIMEDOUT)
+        rc = pthread_cond_timedwait(&fb_wake_cond, &fb_wake_lock, &deadline);
+    pthread_mutex_unlock(&fb_wake_lock);
+
+    if (rc == ETIMEDOUT)
+        ALOGW("Late resume did not finish within %d ms\n", FB_WAKE_TIMEOUT_MS);
+}
+
 static void omap_power_set_interactive(struct power_module *module,
                                                int on)
 {
@@ -357,6 +438,9 @@ static void omap_power_set_interactive(struct power_module *module,
                                    (struct omap_power_module *) module;
     char buf[FREQ_BUF_SIZE];
     int len;
+
+    if (on)
+        omap_power_late_resume();
 
     if (!omap_device->inited || omap_device->screen_state == on)
         return;
