@@ -388,9 +388,14 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVInitSrvConnect(PVRSRV_CONNECTION **ppsConnection)
 		*ppsConnection = IMG_NULL;
 		return PVRSRV_ERROR_BRIDGE_CALL_FAILED;
 	}
+	/* A connection that fails the check never issues INITSRV_CONNECT, so
+	 * this process never becomes the init process; the descriptor closes
+	 * and *ppsConnection reads NULL, as on the bridge-failure paths. */
 	if (sOut.eError != PVRSRV_OK)
 	{
 		SRV_ERR("PVRSRVInitSrvConnect: UM/KM compatibility check failed (%d)", sOut.eError);
+		(void)PVRSRVDisconnect(*ppsConnection);
+		*ppsConnection = IMG_NULL;
 		return sOut.eError;
 	}
 

@@ -8,7 +8,9 @@
  * alphanumeric name equals the requested hint assigns the value. A value
  * from the process-name section ends the search; a value from the default
  * section is kept while the search continues, so a later process-name
- * section overrides it.
+ * section overrides it. A string value is the rest of the line without the
+ * blanks after '=' and without trailing blanks or the '\r' of a CRLF line
+ * ending; other values are the first blank-delimited word after '='.
  */
 #include "srv_um_priv.h"
 
@@ -146,8 +148,9 @@ static SRV_SECTION SrvParseSection(const char *pszLine, const char *pszApp,
 
 /*
  * Parses one "Name = value" line of an active section. Returns 1 when the
- * name equals pszHintName and *ppszValue points at the value text (ending
- * at the line end for strings, at the first blank for other types), 0 for
+ * name equals pszHintName and *ppszValue points at the value text after the
+ * blanks that follow '=' (ending before trailing blanks and '\r' for
+ * strings, at the first blank for other types), 0 for
  * a well-formed line naming another hint, -1 for a malformed line.
  */
 static int SrvParseAssignment(char *pszLine, const char *pszHintName,
@@ -181,16 +184,26 @@ static int SrvParseAssignment(char *pszLine, const char *pszHintName,
 		return -1;
 	}
 	pszValue = pszCursor + 1;
-
-	if (eDataType != IMG_STRING_TYPE)
+	while (*pszValue == ' ' || *pszValue == '\t')
 	{
-		char *pszStop;
+		pszValue++;
+	}
 
-		while (*pszValue == ' ' || *pszValue == '\t')
+	if (eDataType == IMG_STRING_TYPE)
+	{
+		size_t uiLen = strlen(pszValue);
+
+		while (uiLen > 0 && (pszValue[uiLen - 1] == ' ' || pszValue[uiLen - 1] == '\t' ||
+				     pszValue[uiLen - 1] == '\r'))
 		{
-			pszValue++;
+			uiLen--;
 		}
-		pszStop = pszValue;
+		pszValue[uiLen] = '\0';
+	}
+	else
+	{
+		char *pszStop = pszValue;
+
 		while (*pszStop != '\0' && !isspace((unsigned char)*pszStop))
 		{
 			pszStop++;

@@ -5,7 +5,10 @@
  * A kernel sync info counts pending and completed read, write and read2
  * operations on a buffer. The flush calls compare a snapshot of the pending
  * counts against the completed counts and report PVRSRV_ERROR_RETRY while
- * operations remain (DoQuerySyncOpsSatisfied in the kernel); callers poll.
+ * operations remain (DoQuerySyncOpsSatisfied in the kernel). With bWait
+ * FALSE the caller polls; with bWait TRUE PVRSRVSyncOpsFlushToModObj and
+ * PVRSRVSyncOpsFlushToDelta repeat the query until it stops reporting RETRY,
+ * as services.h describes for those two calls.
  */
 #include "srv_um_priv.h"
 
@@ -53,6 +56,30 @@ static PVRSRV_ERROR SrvSyncCall(const PVRSRV_CONNECTION *psConnection, const cha
 		SRV_ERR("%s: kernel call failed (%d)", pszFunc, eError);
 	}
 	return eError;
+}
+
+/* Issues one flush query and, when bWait is set, repeats it every
+ * SRV_FLUSH_POLL_US while the kernel answers PVRSRV_ERROR_RETRY. The wait
+ * has no bound: completion depends on the operations another thread or the
+ * device retires, and a caller that needs a bound polls with bWait FALSE. */
+static PVRSRV_ERROR SrvSyncFlush(const PVRSRV_CONNECTION *psConnection, const char *pszFunc,
+				 IMG_UINT32 ui32BridgeID, IMG_VOID *pvIn, IMG_UINT32 ui32InSize,
+				 IMG_BOOL bWait)
+{
+	PVRSRV_BRIDGE_RETURN sOut;
+	PVRSRV_ERROR eError;
+
+	for (;;)
+	{
+		memset(&sOut, 0, sizeof(sOut));
+		eError = SrvSyncCall(psConnection, pszFunc, ui32BridgeID, pvIn, ui32InSize,
+				     &sOut, sizeof(sOut));
+		if (eError != PVRSRV_ERROR_RETRY || !bWait)
+		{
+			return eError;
+		}
+		PVRSRVWaitus(SRV_FLUSH_POLL_US);
+	}
 }
 
 IMG_EXPORT PVRSRV_ERROR PVRSRVCreateSyncInfoModObj(const PVRSRV_CONNECTION *psConnection,
@@ -242,23 +269,16 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSyncOpsFlushToModObj(const PVRSRV_CONNECTION *psCo
 						   IMG_BOOL bWait)
 {
 	PVRSRV_BRIDGE_IN_SYNC_OPS_FLUSH_TO_MOD_OBJ sIn;
-	PVRSRV_BRIDGE_RETURN sOut;
 
 	if (!SrvConnValid(psConnection, __func__))
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
-	if (bWait)
-	{
-		SRV_ERR("%s: blocking call not supported", __func__);
-		return PVRSRV_ERROR_INVALID_PARAMS;
-	}
 
 	memset(&sIn, 0, sizeof(sIn));
-	memset(&sOut, 0, sizeof(sOut));
 	sIn.hKernelSyncInfoModObj = hKernelSyncInfoModObj;
-	return SrvSyncCall(psConnection, __func__, PVRSRV_BRIDGE_SYNC_OPS_FLUSH_TO_MOD_OBJ,
-			   &sIn, sizeof(sIn), &sOut, sizeof(sOut));
+	return SrvSyncFlush(psConnection, __func__, PVRSRV_BRIDGE_SYNC_OPS_FLUSH_TO_MOD_OBJ,
+			    &sIn, sizeof(sIn), bWait);
 }
 
 IMG_EXPORT PVRSRV_ERROR PVRSRVSyncOpsFlushToDelta(const PVRSRV_CONNECTION *psConnection,
@@ -267,7 +287,6 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSyncOpsFlushToDelta(const PVRSRV_CONNECTION *psCon
 						  IMG_BOOL bWait)
 {
 	PVRSRV_BRIDGE_IN_SYNC_OPS_FLUSH_TO_DELTA sIn;
-	PVRSRV_BRIDGE_RETURN sOut;
 
 	if (!SrvConnValid(psConnection, __func__))
 	{
@@ -277,18 +296,12 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSyncOpsFlushToDelta(const PVRSRV_CONNECTION *psCon
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
-	if (bWait)
-	{
-		SRV_ERR("%s: blocking call not supported", __func__);
-		return PVRSRV_ERROR_INVALID_PARAMS;
-	}
 
 	memset(&sIn, 0, sizeof(sIn));
-	memset(&sOut, 0, sizeof(sOut));
 	sIn.hKernelSyncInfo = psClientSyncInfo->hKernelSyncInfo;
 	sIn.ui32Delta = ui32Delta;
-	return SrvSyncCall(psConnection, __func__, PVRSRV_BRIDGE_SYNC_OPS_FLUSH_TO_DELTA,
-			   &sIn, sizeof(sIn), &sOut, sizeof(sOut));
+	return SrvSyncFlush(psConnection, __func__, PVRSRV_BRIDGE_SYNC_OPS_FLUSH_TO_DELTA,
+			    &sIn, sizeof(sIn), bWait);
 }
 
 /* The sync info returned here carries only the kernel handle: the kernel

@@ -113,8 +113,16 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVCloseDCDevice(IMG_CONST PVRSRV_CONNECTION *psConne
 	return PVRSRV_OK;
 }
 
-/* The handle object is freed once the kernel call ran, whatever the kernel
- * answered. */
+/*
+ * The handle object is freed once the kernel call ran, whatever the kernel
+ * answered: no failure of PVRSRVCloseBCDeviceBW leaves a device that a
+ * second CLOSE_BUFFERCLASS_DEVICE closes safely. A handle lookup failure
+ * repeats on every call. PVRSRV_ERROR_STILL_MAPPED from
+ * CloseBCDeviceCallBack is not PVRSRV_ERROR_RETRY, so FreeResourceByPtr has
+ * already removed and freed the resource-manager item, and a second close
+ * would hand that freed item to ResManFreeResByPtr. A PVRSRVReleaseHandle
+ * failure follows a completed close.
+ */
 IMG_EXPORT PVRSRV_ERROR PVRSRVCloseBCDevice(IMG_CONST PVRSRV_CONNECTION *psConnection,
 					    IMG_HANDLE hDevice)
 {
@@ -575,8 +583,9 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSwapToDCBuffer(IMG_HANDLE hDevice,
  * meminfos the composition read. PVRSRVSwapToDCBuffer2BW resolves the
  * meminfo handles; with PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC it ignores the
  * sync handles and returns a release fence descriptor in hFence (-1 when
- * the display driver produced none). *phFence is written on every path
- * past validation; it reads -1 unless the kernel installed a fence.
+ * the display driver produced none). Once phFence passes the argument
+ * check, *phFence is written on every path; it reads -1 unless the kernel
+ * installed a fence.
  */
 IMG_EXPORT PVRSRV_ERROR PVRSRVSwapToDCBuffer2(IMG_HANDLE hDevice,
 					      IMG_HANDLE hBuffer,
@@ -596,7 +605,13 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSwapToDCBuffer2(IMG_HANDLE hDevice,
 	PVRSRV_ERROR eError;
 	IMG_UINT32 i;
 
-	if (psDevice == IMG_NULL || hBuffer == IMG_NULL || phFence == IMG_NULL ||
+	if (phFence == IMG_NULL)
+	{
+		SRV_ERR("PVRSRVSwapToDCBuffer2: invalid parameters");
+		return PVRSRV_ERROR_INVALID_PARAMS;
+	}
+	*phFence = (IMG_HANDLE)(intptr_t)-1;
+	if (psDevice == IMG_NULL || hBuffer == IMG_NULL ||
 	    ppsMemInfos == IMG_NULL || ui32NumMemSyncInfos == 0)
 	{
 		SRV_ERR("PVRSRVSwapToDCBuffer2: invalid parameters");

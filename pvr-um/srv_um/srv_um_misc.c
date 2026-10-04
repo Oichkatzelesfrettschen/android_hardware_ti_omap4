@@ -194,18 +194,30 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVGetMiscInfo(IMG_CONST PVRSRV_CONNECTION *psConnect
 		return eError;
 	}
 
-	/* The SOC timer register block is a kernel allocation; map it for
-	 * the caller. */
+	/*
+	 * The SOC timer register block is a kernel allocation; map it for the
+	 * caller. GET_MISC_INFO returns a shared handle for the global event
+	 * object; EVENT_OBJECT_OPEN turns it into a wait handle for this
+	 * process. The call succeeds only with both resources held. On a
+	 * failure the one already acquired is released and both present bits
+	 * are cleared, so the caller holds nothing and a following
+	 * PVRSRVReleaseMiscInfo releases nothing.
+	 */
 	if ((psMiscInfo->ui32StatePresent & PVRSRV_MISC_INFO_TIMER_PRESENT) != 0)
 	{
 		eError = SrvMapKernelMem(SrvServices(psConnection),
 					 &psMiscInfo->pvSOCTimerRegisterUM,
 					 &psMiscInfo->hSOCTimerRegisterMappingInfo,
 					 psMiscInfo->hSOCTimerRegisterOSMemHandle);
+		if (eError != PVRSRV_OK)
+		{
+			SRV_ERR("PVRSRVGetMiscInfo: cannot map the SOC timer register (%d)", eError);
+			psMiscInfo->ui32StatePresent &= ~(IMG_UINT32)(PVRSRV_MISC_INFO_TIMER_PRESENT |
+								     PVRSRV_MISC_INFO_GLOBALEVENTOBJECT_PRESENT);
+			return eError;
+		}
 	}
 
-	/* GET_MISC_INFO returns a shared handle for the global event object;
-	 * EVENT_OBJECT_OPEN turns it into a wait handle for this process. */
 	if ((psMiscInfo->ui32StatePresent & PVRSRV_MISC_INFO_GLOBALEVENTOBJECT_PRESENT) != 0)
 	{
 		eEventError = SrvEventObjectOpen(psConnection, &psMiscInfo->sGlobalEventObject,
@@ -214,11 +226,21 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVGetMiscInfo(IMG_CONST PVRSRV_CONNECTION *psConnect
 		{
 			SRV_ERR("PVRSRVGetMiscInfo: cannot open the global event object (%d)",
 				eEventError);
-			eError = eEventError;
+			if ((psMiscInfo->ui32StatePresent & PVRSRV_MISC_INFO_TIMER_PRESENT) != 0 &&
+			    psMiscInfo->pvSOCTimerRegisterUM != IMG_NULL)
+			{
+				(void)SrvUnmapKernelMem(SrvServices(psConnection),
+							psMiscInfo->hSOCTimerRegisterMappingInfo,
+							psMiscInfo->hSOCTimerRegisterOSMemHandle);
+				psMiscInfo->pvSOCTimerRegisterUM = IMG_NULL;
+			}
+			psMiscInfo->ui32StatePresent &= ~(IMG_UINT32)(PVRSRV_MISC_INFO_TIMER_PRESENT |
+								     PVRSRV_MISC_INFO_GLOBALEVENTOBJECT_PRESENT);
+			return eEventError;
 		}
 	}
 
-	return eError;
+	return PVRSRV_OK;
 }
 
 IMG_EXPORT PVRSRV_ERROR PVRSRVReleaseMiscInfo(IMG_CONST PVRSRV_CONNECTION *psConnection,
@@ -255,7 +277,8 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVPollForValue(const PVRSRV_CONNECTION *psConnection
 					   IMG_UINT32 ui32Tries)
 {
 	IMG_UINT64 ui64Budget = (IMG_UINT64)ui32Waitus * ui32Tries;
-	IMG_UINT32 ui32Start;
+	IMG_UINT64 ui64Elapsed = 0;
+	IMG_UINT32 ui32Last;
 	IMG_UINT32 ui32Waits = 0;
 
 	if (pui32LinMemAddr == IMG_NULL)
@@ -263,13 +286,22 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVPollForValue(const PVRSRV_CONNECTION *psConnection
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	/* Times out only after both the time budget and the wait count are
-	 * spent, so early event signals cannot cut the poll short. */
-	ui32Start = PVRSRVClockus();
+	/*
+	 * Times out only after both the time budget and the wait count are
+	 * spent, so early event signals cannot cut the poll short. The budget
+	 * is a 64-bit product while PVRSRVClockus wraps every 2^32 us, so the
+	 * elapsed time sums the unsigned 32-bit differences of consecutive
+	 * readings; each difference spans one wait, which stays below the
+	 * 2^32 us one clock difference can measure.
+	 */
+	ui32Last = PVRSRVClockus();
 	while ((*pui32LinMemAddr & ui32Mask) != ui32Value)
 	{
-		if ((IMG_UINT64)(IMG_UINT32)(PVRSRVClockus() - ui32Start) > ui64Budget &&
-		    ui32Waits >= ui32Tries)
+		IMG_UINT32 ui32Now = PVRSRVClockus();
+
+		ui64Elapsed += (IMG_UINT32)(ui32Now - ui32Last);
+		ui32Last = ui32Now;
+		if (ui64Elapsed > ui64Budget && ui32Waits >= ui32Tries)
 		{
 			return PVRSRV_ERROR_TIMEOUT_POLLING_FOR_VALUE;
 		}

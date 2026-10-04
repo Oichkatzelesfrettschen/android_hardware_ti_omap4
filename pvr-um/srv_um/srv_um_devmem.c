@@ -782,11 +782,14 @@ static void SrvUnwrapKernelMem(const PVRSRV_DEV_DATA *psDevData, IMG_HANDLE hKer
 }
 
 /*
- * Makes caller memory device-accessible. With psSysPAddr the kernel wraps
- * the listed physical pages (one entry for contiguous memory, else one per
- * 4 KiB page spanned by offset + size); otherwise it wraps the pages behind
- * pvLinAddr. The library keeps the address fields the kernel reports and
- * maps only the sync data.
+ * Makes caller memory device-accessible. PVRSRVWrapExtMemoryKM wraps the
+ * pages behind pvLinAddr when it is set and the listed physical pages of
+ * psSysPAddr otherwise (one entry for contiguous memory, else one per 4 KiB
+ * page spanned by offset + size). The kernel reports pvLinAddr 0, so the
+ * meminfo carries the caller's pvLinAddr as its CPU address; that is the
+ * byte sDevVAddr names, because BM_Wrap adds the in-page offset to the
+ * device address. The library maps only the sync data and never unmaps the
+ * caller's buffer.
  */
 IMG_EXPORT PVRSRV_ERROR PVRSRVWrapExtMemory(IMG_CONST PVRSRV_DEV_DATA *psDevData,
 					    IMG_HANDLE hDevMemContext,
@@ -862,8 +865,13 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVWrapExtMemory(IMG_CONST PVRSRV_DEV_DATA *psDevData
 	{
 		SrvUnwrapKernelMem(psDevData, sOut.sClientMemInfo.hKernelMemInfo);
 		*ppsMemInfo = IMG_NULL;
+		return eError;
 	}
-	return eError;
+	if (pvLinAddr != IMG_NULL)
+	{
+		(*ppsMemInfo)->pvLinAddr = pvLinAddr;
+	}
+	return PVRSRV_OK;
 }
 
 IMG_EXPORT PVRSRV_ERROR PVRSRVUnwrapExtMemory(IMG_CONST PVRSRV_DEV_DATA *psDevData,
