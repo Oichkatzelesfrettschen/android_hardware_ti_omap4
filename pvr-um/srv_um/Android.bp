@@ -13,6 +13,7 @@ cc_library_shared {
         "srv_um_bridge.c",
         "srv_um_connection.c",
         "srv_um_debug.c",
+        "srv_um_devclass.c",
         "srv_um_devmem.c",
         "srv_um_misc.c",
         "srv_um_sync.c",

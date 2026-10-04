@@ -30,7 +30,8 @@ cc=$bin/$target-clang
 out=${OUT:-$src/out}
 
 lib_srcs="srv_um_abi.c srv_um_apphint.c srv_um_bridge.c srv_um_connection.c
-srv_um_debug.c srv_um_devmem.c srv_um_misc.c srv_um_sync.c srv_um_utils.c"
+srv_um_debug.c srv_um_devclass.c srv_um_devmem.c srv_um_misc.c srv_um_sync.c
+srv_um_utils.c"
 
 includes="-I$src -I$pvr/include4 -I$pvr/services4/include -I$pvr/services4/system/omap"
 cflags="-std=c11 -mcpu=cortex-a9 -mthumb -O2 -flto=thin -fPIC
