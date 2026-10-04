@@ -1,0 +1,34 @@
+# clang-tidy configuration for the services user-mode library and probe.
+# Disabled checks and the reason each is off:
+#   bugprone-easily-swappable-parameters: services.h fixes every exported
+#     prototype, so adjacent same-typed parameters are part of the interface.
+#   bugprone-reserved-identifier: services.h names its structure tags
+#     _PVRSRV_*_ and the opaque mutex tags this library completes.
+#   cert-err33-c: printf/fflush results in the probe and the logging path
+#     carry no recovery action.
+#   clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling:
+#     flags every memcpy/memset/snprintf; C11 Annex K is absent from bionic.
+#   performance-no-int-to-ptr: the kernel ABI reports user mapping addresses
+#     (PVRSRV_BRIDGE_OUT_*_MMAP_DATA.uiUserVAddr) and fence descriptors as
+#     integers; converting them to pointers is the interface.
+#   misc-header-include-cycle: img_types.h and img_defs.h of pvr-source
+#     include each other; the cycle is in the kernel headers this library
+#     consumes unchanged.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier,
+  cert-*,
+  -cert-err33-c,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  android-*,
+  misc-*,
+  -misc-include-cleaner,
+  -misc-header-include-cycle,
+  performance-*,
+  -performance-no-int-to-ptr,
+  portability-*
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'pvr-um/srv_um/.*'

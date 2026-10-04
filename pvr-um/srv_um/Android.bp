@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: MIT
+//
+// Clean-room services user-mode library for the SGX540 pvrsrvkm services
+// module. The distinct module name keeps it from replacing the vendor
+// libsrv_um.so until it is selected explicitly.
+
+cc_library_shared {
+    name: "libsrv_um_cr",
+    vendor: true,
+    srcs: [
+        "srv_um_abi.c",
+        "srv_um_apphint.c",
+        "srv_um_bridge.c",
+        "srv_um_debug.c",
+        "srv_um_utils.c",
+    ],
+    // The kernel headers live in this repository's pvr-source tree;
+    // BoardConfigCommon.mk places the repository at hardware/ti/omap4
+    // (OMAP4_NEXT_FOLDER).
+    include_dirs: [
+        "hardware/ti/omap4/pvr-source/include4",
+        "hardware/ti/omap4/pvr-source/services4/include",
+        "hardware/ti/omap4/pvr-source/services4/system/omap",
+    ],
+    c_std: "c11",
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fvisibility=hidden",
+    ],
+    lto: {
+        thin: true,
+    },
+    shared_libs: [
+        "libdl",
+        "libhardware",
+        "liblog",
+    ],
+}
