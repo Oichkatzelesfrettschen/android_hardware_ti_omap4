@@ -11,7 +11,11 @@ cc_library_shared {
         "srv_um_abi.c",
         "srv_um_apphint.c",
         "srv_um_bridge.c",
+        "srv_um_connection.c",
         "srv_um_debug.c",
+        "srv_um_devmem.c",
+        "srv_um_misc.c",
+        "srv_um_sync.c",
         "srv_um_utils.c",
     ],
     // The kernel headers live in this repository's pvr-source tree;
