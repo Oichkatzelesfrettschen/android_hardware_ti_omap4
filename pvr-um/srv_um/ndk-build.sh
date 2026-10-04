@@ -1,9 +1,9 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 #
-# Standalone NDK build of libsrv_um_cr.so,
-# an export-set check against exports.txt, and a clang-tidy pass
-# over the library sources.
+# Standalone NDK build of libsrv_um_cr.so and the srv_um_cr_probe device
+# program, an export-set check against exports.txt, and a clang-tidy pass
+# over the library and probe sources.
 #
 # Usage: ndk-build.sh [all|build|tidy]   (default: all)
 #
@@ -34,6 +34,8 @@ srv_um_debug.c srv_um_devclass.c srv_um_devmem.c srv_um_misc.c srv_um_sync.c
 srv_um_utils.c"
 
 includes="-I$src -I$pvr/include4 -I$pvr/services4/include -I$pvr/services4/system/omap"
+# sgxapi_km.h (SGX_GENERAL_HEAP_ID for the probe) includes the hwdefs headers.
+probe_includes="$includes -I$pvr/services4/srvkm/hwdefs"
 cflags="-std=c11 -mcpu=cortex-a9 -mthumb -O2 -flto=thin -fPIC
 -fvisibility=hidden -Wall -Wextra -Werror"
 
@@ -59,6 +61,10 @@ build() {
 		-o "$out/libsrv_um_cr.so" $objs \
 		-L"$libhw" -Wl,-rpath-link,"$libhw" -lhardware -llog -ldl
 
+	# shellcheck disable=SC2086
+	"$cc" $cflags -fPIE -pie -fuse-ld=lld $probe_includes \
+		-o "$out/srv_um_cr_probe" "$src/probe.c" \
+		-L"$out" -Wl,-rpath-link,"$libhw" -lsrv_um_cr
 
 	# The exported dynamic symbols equal exports.txt exactly.
 	"$bin/llvm-nm" -D --defined-only "$out/libsrv_um_cr.so" |
@@ -75,14 +81,14 @@ build() {
 tidy() {
 	sysroot=$ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot
 	files=""
-	for f in $lib_srcs; do
+	for f in $lib_srcs probe.c; do
 		files="$files $src/$f"
 	done
 	# The check set and HeaderFilterRegex live in .clang-tidy beside the
 	# sources; pvr-source headers fall outside the filter.
 	# shellcheck disable=SC2086
 	"$bin/clang-tidy" --quiet $files -- --target=$target --sysroot="$sysroot" \
-		-std=c11 -mcpu=cortex-a9 -mthumb -fvisibility=hidden $includes
+		-std=c11 -mcpu=cortex-a9 -mthumb -fvisibility=hidden $probe_includes
 	echo "clang-tidy clean"
 }
 
