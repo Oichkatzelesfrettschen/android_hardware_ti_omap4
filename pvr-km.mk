@@ -33,14 +33,21 @@ PVR_KM_OMAPLFB := $(PVR_KM_OUT)/target/omaplfb.ko
 
 # The product supplies the same LLVM directory and IAS mode as kernel.mk.
 # Keep the GCC toolchain selected when PVR_KM_LLVM is empty.
+# Kati rejects export in product makefiles, so the path is validated in make
+# itself: removing every permitted character must leave nothing, which keeps
+# the value a literal word wherever the recipe and the kernel's LLVM= probes
+# expand it.
 ifneq ($(strip $(PVR_KM_LLVM)),)
-export PVR_KM_LLVM
-PVR_KM_LLVM_INVALID := $(shell printf '%s' "$$PVR_KM_LLVM" | LC_ALL=C tr -d 'A-Za-z0-9_./+-' | od -An -tx1)
-ifneq ($(strip $(PVR_KM_LLVM_INVALID)),)
-$(error PVR_KM_LLVM contains unsafe path characters)
-endif
 ifneq ($(words $(PVR_KM_LLVM)),1)
 $(error PVR_KM_LLVM must be one absolute directory without spaces)
+endif
+PVR_KM_LLVM_SAFE_CHARS := a b c d e f g h i j k l m n o p q r s t u v w x y z \
+	A B C D E F G H I J K L M N O P Q R S T U V W X Y Z \
+	0 1 2 3 4 5 6 7 8 9 _ . / + -
+PVR_KM_LLVM_REST := $(PVR_KM_LLVM)
+$(foreach c,$(PVR_KM_LLVM_SAFE_CHARS),$(eval PVR_KM_LLVM_REST := $$(subst $(c),,$$(PVR_KM_LLVM_REST))))
+ifneq ($(PVR_KM_LLVM_REST),)
+$(error PVR_KM_LLVM contains unsafe path characters)
 endif
 ifeq ($(filter /%/,$(PVR_KM_LLVM)),)
 $(error PVR_KM_LLVM must be an absolute directory ending in /)
