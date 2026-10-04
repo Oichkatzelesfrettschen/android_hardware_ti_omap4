@@ -11,6 +11,9 @@
 #   performance-no-int-to-ptr: the kernel ABI reports user mapping addresses
 #     (PVRSRV_BRIDGE_OUT_*_MMAP_DATA.uiUserVAddr) and fence descriptors as
 #     integers; converting them to pointers is the interface.
+#   misc-include-cleaner: services.h and img_types.h reach the library through
+#     srv_um_priv.h, which every source includes once; the check would demand
+#     each pvr-source header the aggregate already supplies.
 #   misc-header-include-cycle: img_types.h and img_defs.h of pvr-source
 #     include each other; the cycle is in the kernel headers this library
 #     consumes unchanged.

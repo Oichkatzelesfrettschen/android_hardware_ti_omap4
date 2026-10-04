@@ -89,8 +89,7 @@ static PVRSRV_ERROR SrvMemInfoCreate(const SRV_SERVICES *psServices,
 		case SRV_BUF_MAP:
 			if (SrvMapKernelMem(psServices, &psMemInfo->pvLinAddr,
 					    &psMemInfo->hMappingInfo,
-					    psMemInfo->hKernelMemInfo) != PVRSRV_OK ||
-			    psMemInfo->pvLinAddr == IMG_NULL)
+					    psMemInfo->hKernelMemInfo) != PVRSRV_OK)
 			{
 				SRV_ERR("SrvMemInfoCreate: cannot map the buffer");
 				free(psMemInfo);
@@ -530,7 +529,9 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVExportDeviceMem2(IMG_CONST PVRSRV_DEV_DATA *psDevD
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	iNewFd = open("/dev/pvrsrvkm", O_RDWR | O_CLOEXEC);
+	/* The exported descriptor is the caller's to hand on, through fork+exec
+	 * included, so it carries no close-on-exec flag. */
+	iNewFd = open("/dev/pvrsrvkm", O_RDWR);
 	if (iNewFd < 0)
 	{
 		SRV_ERR("PVRSRVExportDeviceMem2: cannot open /dev/pvrsrvkm: %s", strerror(errno));

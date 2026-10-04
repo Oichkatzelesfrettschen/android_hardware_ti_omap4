@@ -631,7 +631,6 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSwapToDCBuffer2(IMG_HANDLE hDevice,
 
 	memset(&sIn, 0, sizeof(sIn));
 	memset(&sOut, 0, sizeof(sOut));
-	sOut.hFence = (IMG_HANDLE)(intptr_t)-1;
 	sIn.hDeviceKM = psDevice->hDeviceKM;
 	sIn.hSwapChain = hBuffer;
 	sIn.ui32SwapInterval = ui32SwapInterval;
@@ -645,6 +644,12 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVSwapToDCBuffer2(IMG_HANDLE hDevice,
 			      &sIn, sizeof(sIn), &sOut, sizeof(sOut), IMG_TRUE);
 	free((void *)phMemHandles);
 	free((void *)phSyncHandles);
-	*phFence = sOut.hFence;
+	/*
+	 * The kernel copies its whole output buffer back even when the handler
+	 * fails a handle lookup without writing hFence, and that buffer still
+	 * holds the previous bridge call's output; only a successful swap
+	 * carries a fence descriptor.
+	 */
+	*phFence = (eError == PVRSRV_OK) ? sOut.hFence : (IMG_HANDLE)(intptr_t)-1;
 	return eError;
 }
