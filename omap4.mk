@@ -32,18 +32,6 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(OMAP4_NEXT_FOLDER)/seccomp/mediacodec-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy
 
-# SGX540 is slower with the scissor optimization enabled
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.hwui.disable_scissor_opt=true
-
-# Disable dirty regions invalidation
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.hwui.render_dirty_regions=false
-
-# We don't support eglSwapBuffersWithDamageKHR; this avoids some unnecessary code
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.hwui.swap_with_damage=false
-
 # We don't support the new camera API
 PRODUCT_PROPERTY_OVERRIDES += \
     camera2.portability.force_api=1

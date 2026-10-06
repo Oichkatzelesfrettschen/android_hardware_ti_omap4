@@ -18,14 +18,10 @@ OMAP4_NEXT_FOLDER := hardware/ti/omap4
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_VARIANT := cortex-a9
 TARGET_CPU_ABI2 := armeabi
-TARGET_CPU_SMP := true
 TARGET_ARCH := arm
 TARGET_BOARD_PLATFORM := omap4
 TARGET_BOARD_PLATFORM_VARIANT := omap4-next
 TARGET_ARCH_VARIANT := armv7-a-neon
-
-# Graphics
-USE_OPENGL_RENDERER := true
 
 # Global include changes
 #TARGET_SPECIFIC_HEADER_PATH += $(OMAP4_NEXT_FOLDER)/include
@@ -40,11 +36,6 @@ ENHANCED_DOMX := true
 TARGET_SPECIFIC_HEADER_PATH += $(OMAP4_NEXT_FOLDER)/domx/omx_core/inc
 BOARD_USE_TI_CUSTOM_DOMX := true
 DOMX_PATH := $(OMAP4_NEXT_FOLDER)/domx
-
-# Bootanimation
-TARGET_BOOTANIMATION_PRELOAD := false
-TARGET_BOOTANIMATION_TEXTURE_CACHE := false
-TARGET_BOOTANIMATION_USE_RGB565 := true
 
 # SELinux
 include $(OMAP4_NEXT_FOLDER)/sepolicy/sepolicy.mk
