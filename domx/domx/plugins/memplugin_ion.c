@@ -134,11 +134,15 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_Alloc(void *pMemPluginHandle, OMX_U32 nClient,
                                     MEMPLUGIN_BUFFER_PROPERTIES *pIonBufferProp)
 {
     OMX_S16 ret;
-    struct ion_handle *temp;
+    struct ion_handle *temp = NULL;
+    OMX_BOOL allocationOwned = OMX_FALSE;
     size_t stride = 0;
     MEMPLUGIN_ERRORTYPE eError = MEMPLUGIN_ERROR_NONE;
     MEMPLUGIN_ION_PARAMS sIonParams;
     MEMPLUGIN_OBJECT    *pMemPluginHdl = (MEMPLUGIN_OBJECT *)pMemPluginHandle;
+
+    memset(pIonBufferProp, 0, sizeof(*pIonBufferProp));
+    pIonBufferProp->sBuffer_accessor.bufferFd = -1;
 
     if(pIonBufferParams->nWidth <= 0)
     {
@@ -220,6 +224,7 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_Alloc(void *pMemPluginHandle, OMX_U32 nClient,
         eError = MEMPLUGIN_ERROR_UNDEFINED;
         goto EXIT;
     }
+    allocationOwned = OMX_TRUE;
     pIonBufferProp->sBuffer_accessor.pBufferHandle = (OMX_PTR)temp;
     pIonBufferProp->nStride =  stride;
 
@@ -255,6 +260,9 @@ MEMPLUGIN_ERRORTYPE MemPlugin_ION_Alloc(void *pMemPluginHandle, OMX_U32 nClient,
     }
 EXIT:
       if (eError != MEMPLUGIN_ERROR_NONE) {
+          if (allocationOwned && ion_free(nClient, (ion_user_handle_t)temp) < 0)
+              DOMX_ERROR("Failed to release ION allocation after export failure");
+          pIonBufferProp->sBuffer_accessor.pBufferHandle = NULL;
           DOMX_EXIT("%s exited with error 0x%x",__FUNCTION__,eError);
          return eError;
       }

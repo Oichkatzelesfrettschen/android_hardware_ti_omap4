@@ -133,7 +133,14 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 {
 	RPC_OMX_ERRORTYPE eRPCError = RPC_OMX_ErrorNone;
 	int status;
+	OMX_PTR registeredHandles[2] = { NULL, NULL };
+	unsigned int handleIndex;
 	RPC_OMX_CONTEXT *pRPCCtx = (RPC_OMX_CONTEXT *) hRPCCtx;
+
+	if (handle1)
+		*handle1 = NULL;
+	if (handle2)
+		*handle2 = NULL;
 
 	if ((fd1 < 0) || (handle1 ==  NULL) ||
 	    (((proxyBufferType == GrallocPointers) || (proxyBufferType == BufferDescriptorVirtual2D)) && (handle2 ==  NULL))) {
@@ -160,7 +167,7 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 		goto EXIT;
 	}
 	if (ion_data.handle)
-		*handle1 = (void *)ion_data.handle;
+		registeredHandles[0] = (void *)ion_data.handle;
 	else
 	{
 	    DOMX_ERROR("Registration failed - Invalid fd passed for Y buffer");
@@ -176,7 +183,7 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 	   goto EXIT;
 	   }
 	if (ion_data.handle)
-	    *handle2 = (void *)ion_data.handle;
+	    registeredHandles[1] = (void *)ion_data.handle;
 	else	 {
 	     DOMX_ERROR("Registration failed - Invalid fd passed for UV buffer");
 	     eRPCError = RPC_OMX_ErrorBadParameter;
@@ -197,24 +204,23 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 				DOMX_ERROR("OMX_IOCPVRREGISTER not supported with current kernel version");
 			} else {
 				DOMX_ERROR("RegisterBuffer ioctl call failed");
-				eRPCError = RPC_OMX_ErrorInsufficientResources;
 			}
+			eRPCError = RPC_OMX_ErrorInsufficientResources;
 			goto EXIT;
 		}
 
-		if (pvr_data.handles[0])
-			*handle1 = pvr_data.handles[0];
-		else
+		registeredHandles[0] = pvr_data.handles[0];
+		registeredHandles[1] = pvr_data.handles[1];
+		if (!pvr_data.handles[0])
 		{
 				DOMX_ERROR("Registration failed - Invalid fd passed for gralloc - reg handle (Y) is NULL");
 			    eRPCError = RPC_OMX_ErrorBadParameter;
 			    goto EXIT;
 		}
-		if(pvr_data.num_handles > 1)
+		/* The kernel count describes successful imports, not requested planes. */
+		if (fd2 >= 0)
 		{
-			if (pvr_data.handles[1])
-				*handle2 = pvr_data.handles[1];
-			else
+			if (!pvr_data.handles[1])
 			{
 				DOMX_ERROR("Registration failed - Invalid fd passed for gralloc - reg handle (UV) is NULL num_handles: %d",pvr_data.num_handles);
 				eRPCError = RPC_OMX_ErrorBadParameter;
@@ -224,7 +230,7 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 		else
 		{
 			DOMX_DEBUG("Gralloc buffer has only one component");
-			*handle2 = NULL;
+			registeredHandles[1] = NULL;
 		}
 #else
  DOMX_ERROR("No Registerbuffer implementation for gralloc - macro mess up!");
@@ -242,7 +248,7 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 			goto EXIT;
 		}
 		if (ion_data.handle)
-			*handle1 = (void *)ion_data.handle;
+			registeredHandles[0] = (void *)ion_data.handle;
 		else
 		{
 		    DOMX_ERROR("Registration failed - Invalid fd passed");
@@ -258,6 +264,21 @@ RPC_OMX_ERRORTYPE RPC_RegisterBuffer(OMX_HANDLETYPE hRPCCtx, int fd1, int fd2,
 		 goto EXIT;
      }
 EXIT:
+	if (eRPCError == RPC_OMX_ErrorNone) {
+		*handle1 = registeredHandles[0];
+		if (handle2)
+			*handle2 = registeredHandles[1];
+	} else {
+		/* Each imported plane owns a reference, including shared handles. */
+		for (handleIndex = 0; handleIndex < 2; handleIndex++) {
+			if (registeredHandles[handleIndex]) {
+				struct ion_fd_data releaseData;
+				releaseData.handle = (ion_user_handle_t)registeredHandles[handleIndex];
+				if (ioctl(pRPCCtx->fd_omx, OMX_IOCIONUNREGISTER, &releaseData) < 0)
+					DOMX_ERROR("Failed to roll back buffer registration");
+			}
+		}
+	}
 	return eRPCError;
 }
 
@@ -814,6 +835,8 @@ OMX_ERRORTYPE PROXY_AllocateBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	if(eError != OMX_ErrorNone) {
 		DOMX_ERROR("PROXY_UseBuffer in PROXY_AllocateBuffer failed with error %d (0x%08x)", eError, eError);
 		MemPlugin_Free(pCompPrv->pMemPluginHandle,pCompPrv->nMemmgrClientDesc,&newbuffer_params,&newbuffer_prop);
+		TIMM_OSAL_Memset(&pCompPrv->tBufList[currentBuffer].bufferAccessors[0],
+		    0, sizeof(MEMPLUGIN_BUFFER_ACCESSOR));
 		goto EXIT;
 	}
 	if (pCompPrv->bMapBuffers == OMX_TRUE)
@@ -952,6 +975,11 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 	OMX_TI_PLATFORMPRIVATE *pPlatformPrivate = NULL;
 	OMX_COMPONENTTYPE *hComp = (OMX_COMPONENTTYPE *) hComponent;
 	OMX_BOOL bSlotFound = OMX_FALSE;
+	OMX_BOOL metadataAllocated = OMX_FALSE;
+	OMX_BOOL rollbackAllowed = OMX_TRUE;
+#ifdef USE_ION
+	OMX_PTR registeredHandles[3] = { NULL, NULL, NULL };
+#endif
 	OMX_PTR pAuxBuf0 = pBuffer;
 	OMX_TI_PARAM_METADATABUFFERINFO tMetaDataBuffer;
 	MEMPLUGIN_BUFFER_PROPERTIES metadataBuffer_prop;
@@ -1069,39 +1097,47 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 			eError = OMX_ErrorInsufficientResources;
 			goto EXIT;
 		}
+		metadataAllocated = OMX_TRUE;
 		((OMX_TI_PLATFORMPRIVATE *)pBufferHeader->
 			pPlatformPrivate)->pMetaDataBuffer = metadataBuffer_prop.sBuffer_accessor.pBufferHandle;
-		pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pBufferHandle = metadataBuffer_prop.sBuffer_accessor.pBufferHandle;
 		DOMX_DEBUG("Metadata buffer ion handle = %d",((OMX_TI_PLATFORMPRIVATE *)pBufferHeader->pPlatformPrivate)->pMetaDataBuffer);
-		pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pBufferMappedAddress = metadataBuffer_prop.sBuffer_accessor.pBufferMappedAddress;
-		pCompPrv->tBufList[currentBuffer].bufferAccessors[2].bufferFd = metadataBuffer_prop.sBuffer_accessor.bufferFd;
 	}
 
 #ifdef USE_ION
 	{
-		// Need to register buffers when using ion and rpmsg
-		eRPCError = RPC_RegisterBuffer(pCompPrv->hRemoteComp, (int)pAuxBuf0,(int)((OMX_TI_PLATFORMPRIVATE *) pBufferHeader->pPlatformPrivate)->pAuxBuf1,
-							&pCompPrv->tBufList[currentBuffer].bufferAccessors[0].pRegBufferHandle,&pCompPrv->tBufList[currentBuffer].bufferAccessors[1].pRegBufferHandle,
+		int auxiliaryBufferFd = -1;
+		/* Descriptor zero names a valid plane; an absent plane uses -1. */
+		if (pCompPrv->proxyPortBuffers[nPortIndex].proxyBufferType == BufferDescriptorVirtual2D)
+			auxiliaryBufferFd = (int)pPlatformPrivate->pAuxBuf1;
+#ifdef ENABLE_GRALLOC_BUFFERS
+		else if (pCompPrv->proxyPortBuffers[nPortIndex].proxyBufferType == GrallocPointers &&
+		    ((native_handle_t *)pBuffer)->numFds > 1)
+			auxiliaryBufferFd = (int)pPlatformPrivate->pAuxBuf1;
+#endif
+		eRPCError = RPC_RegisterBuffer(pCompPrv->hRemoteComp, (int)pAuxBuf0, auxiliaryBufferFd,
+							&registeredHandles[0],&registeredHandles[1],
 		                    pCompPrv->proxyPortBuffers[nPortIndex].proxyBufferType);
 		 PROXY_checkRpcError();
-		if (pCompPrv->tBufList[currentBuffer].bufferAccessors[0].pRegBufferHandle)
-			pAuxBuf0 = pCompPrv->tBufList[currentBuffer].bufferAccessors[0].pRegBufferHandle;
-		if (pCompPrv->tBufList[currentBuffer].bufferAccessors[1].pRegBufferHandle)
-			pPlatformPrivate->pAuxBuf1 = pCompPrv->tBufList[currentBuffer].bufferAccessors[1].pRegBufferHandle;
+		if (registeredHandles[0])
+			pAuxBuf0 = registeredHandles[0];
+		if (registeredHandles[1])
+			pPlatformPrivate->pAuxBuf1 = registeredHandles[1];
 
 		if (pPlatformPrivate->pMetaDataBuffer != NULL)
 		{
-			eRPCError = RPC_RegisterBuffer(pCompPrv->hRemoteComp, pCompPrv->tBufList[currentBuffer].bufferAccessors[2].bufferFd, -1,
-					   &(pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pRegBufferHandle), NULL, IONPointers);
+			eRPCError = RPC_RegisterBuffer(pCompPrv->hRemoteComp, metadataBuffer_prop.sBuffer_accessor.bufferFd, -1,
+					   &(registeredHandles[2]), NULL, IONPointers);
 			PROXY_checkRpcError();
-			if (pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pRegBufferHandle)
-				pPlatformPrivate->pMetaDataBuffer = pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pRegBufferHandle;
+			if (registeredHandles[2])
+				pPlatformPrivate->pMetaDataBuffer = registeredHandles[2];
 		}
 	}
 #endif
 
 	eRPCError = RPC_UseBuffer(pCompPrv->hRemoteComp, &pBufferHeader, nPortIndex,
 		pAppPrivate, nSizeBytes, pAuxBuf0, &pBufHeaderRemote, &eCompReturn);
+	/* A failed acknowledgement leaves remote ownership unresolved. */
+	rollbackAllowed = (eRPCError == RPC_OMX_ErrorNone);
 
 	PROXY_checkRpcError();
 
@@ -1112,11 +1148,18 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
 
 	if (pCompPrv->bMapBuffers == OMX_TRUE && tMetaDataBuffer.bIsMetaDataEnabledOnPort)
 	{
-		((OMX_TI_PLATFORMPRIVATE *)pBufferHeader->pPlatformPrivate)->pMetaDataBuffer = pCompPrv->tBufList[currentBuffer].bufferAccessors[2].pBufferMappedAddress;
+		((OMX_TI_PLATFORMPRIVATE *)pBufferHeader->pPlatformPrivate)->pMetaDataBuffer = metadataBuffer_prop.sBuffer_accessor.pBufferMappedAddress;
 		//ion_free(pCompPrv->nMemmgrClientDesc, handleToMap);
 		memset(((OMX_TI_PLATFORMPRIVATE *)pBufferHeader->pPlatformPrivate)->pMetaDataBuffer,
 			0x0, tMetaDataBuffer.nMetaDataSize);
 	}
+
+	if (metadataAllocated)
+		pCompPrv->tBufList[currentBuffer].bufferAccessors[2] = metadataBuffer_prop.sBuffer_accessor;
+#ifdef USE_ION
+	for (i = 0; i < 3; i++)
+		pCompPrv->tBufList[currentBuffer].bufferAccessors[i].pRegBufferHandle = registeredHandles[i];
+#endif
 
 	//Storing details of pBufferHeader/Mapped/Actual buffer address locally.
 	pCompPrv->tBufList[currentBuffer].pBufHeader = pBufferHeader;
@@ -1134,6 +1177,19 @@ static OMX_ERRORTYPE PROXY_UseBuffer(OMX_IN OMX_HANDLETYPE hComponent,
       EXIT:
 	if (eError != OMX_ErrorNone)
 	{
+#ifdef USE_ION
+		/* The slot receives registrations only after remote acceptance. */
+		for (i = 0; i < 3; i++) {
+			if (rollbackAllowed && registeredHandles[i] &&
+			    RPC_UnRegisterBuffer(pCompPrv->hRemoteComp, registeredHandles[i],
+			        NULL, IONPointers) != RPC_OMX_ErrorNone)
+				DOMX_ERROR("Failed to roll back UseBuffer registration");
+		}
+#endif
+		if (rollbackAllowed && metadataAllocated &&
+		    MemPlugin_Free(pCompPrv->pMemPluginHandle, pCompPrv->nMemmgrClientDesc,
+		        &metadataBuffer_params, &metadataBuffer_prop) != MEMPLUGIN_ERROR_NONE)
+			DOMX_ERROR("Failed to release UseBuffer metadata");
 		if (pPlatformPrivate)
 			TIMM_OSAL_Free(pPlatformPrivate);
 		if (pBufferHeader)
