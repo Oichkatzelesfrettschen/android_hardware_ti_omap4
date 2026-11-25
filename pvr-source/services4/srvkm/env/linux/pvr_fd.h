@@ -30,7 +30,11 @@ static inline int PVRGetUnusedFdCloexec(void)
 	if (iFd >= 0)
 	{
 		spin_lock(&psFiles->file_lock);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0))
+		__set_close_on_exec(iFd, files_fdtable(psFiles));
+#else
 		FD_SET(iFd, files_fdtable(psFiles)->close_on_exec);
+#endif
 		spin_unlock(&psFiles->file_lock);
 	}
 	return iFd;
