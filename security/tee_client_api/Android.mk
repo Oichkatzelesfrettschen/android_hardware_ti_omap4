@@ -16,6 +16,7 @@ endif
 LOCAL_CFLAGS += -I $(LOCAL_PATH)/../tf_sdk/include/
 
 LOCAL_MODULE:= libtee_client_api_driver
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_STATIC_LIBRARY)

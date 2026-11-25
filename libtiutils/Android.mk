@@ -57,5 +57,4 @@ endif
 LOCAL_MODULE:= libtiutils
 LOCAL_MODULE_TAGS:= optional
 
-LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
