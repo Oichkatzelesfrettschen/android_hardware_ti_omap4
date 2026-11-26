@@ -462,10 +462,10 @@ int CameraHal::setParameters(const android::CameraParameters& params)
                     }
 
                     mParameters.set(TICameraParameters::KEY_CAP_MODE, valstr);
-            } else if (!mCapModeBackup.isEmpty()) {
+            } else if (!mCapModeBackup.empty()) {
                 // Restore previous capture mode after stopPreview()
                 mParameters.set(TICameraParameters::KEY_CAP_MODE,
-                                mCapModeBackup.string());
+                                mCapModeBackup.c_str());
                 updateRequired = true;
             }
 
@@ -2898,8 +2898,8 @@ status_t CameraHal::restartPreview()
 
     {
         android::AutoMutex lock(mLock);
-        if (!mCapModeBackup.isEmpty()) {
-            mParameters.set(TICameraParameters::KEY_CAP_MODE, mCapModeBackup.string());
+        if (!mCapModeBackup.empty()) {
+            mParameters.set(TICameraParameters::KEY_CAP_MODE, mCapModeBackup.c_str());
         } else {
             mParameters.set(TICameraParameters::KEY_CAP_MODE, "");
         }
@@ -3737,7 +3737,7 @@ char* CameraHal::getParameters()
 
     // camera service frees this string...
     params_string = (char*) malloc(sizeof(char) * (params_str8.length()+1));
-    strcpy(params_string, params_str8.string());
+    strcpy(params_string, params_str8.c_str());
 
     LOG_FUNCTION_NAME_EXIT;
 
@@ -3859,7 +3859,7 @@ status_t CameraHal::reprocess(const char *params)
     }
 
     // 5. Start capturing
-    ret = __takePicture(shotParams.flatten().string(), &startReprocess);
+    ret = __takePicture(shotParams.flatten().c_str(), &startReprocess);
 
 exit:
     return ret;

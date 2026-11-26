@@ -180,16 +180,16 @@ size_t DCCHandler::readDCCdir(OMX_U8* buffer,
     size_t ret = 0;
 
     for (i = 0; i < dirPaths.size(); i++) {
-        d = opendir(dirPaths.itemAt(i)->string());
+        d = opendir(dirPaths.itemAt(i)->c_str());
         if (d) {
             // read each filename
             while ((dir = readdir(d)) != NULL) {
                 filename = dir->d_name;
                 temp.clear();
-                temp.append(dirPaths.itemAt(i)->string());
+                temp.append(dirPaths.itemAt(i)->c_str());
                 temp.append(filename);
                 if ((*filename != *dotdot)) {
-                    pFile = fopen(temp.string(), "rb");
+                    pFile = fopen(temp.c_str(), "rb");
                     if (pFile == NULL) {
                         stat = -errno;
                     } else {

@@ -1921,9 +1921,9 @@ status_t OMXCameraAdapter::setGammaTable(Gen3A_settings& Gen3A)
             DmpG.appendFormat(" %d:%d;", (int)gammaTable->pG[i].nOffset, (int)(int)gammaTable->pG[i].nSlope);
             DmpB.appendFormat(" %d:%d;", (int)gammaTable->pB[i].nOffset, (int)(int)gammaTable->pB[i].nSlope);
         }
-        CAMHAL_LOGE("Gamma table R:%s", DmpR.string());
-        CAMHAL_LOGE("Gamma table G:%s", DmpG.string());
-        CAMHAL_LOGE("Gamma table B:%s", DmpB.string());
+        CAMHAL_LOGE("Gamma table R:%s", DmpR.c_str());
+        CAMHAL_LOGE("Gamma table G:%s", DmpG.c_str());
+        CAMHAL_LOGE("Gamma table B:%s", DmpB.c_str());
     }
 #endif
 
