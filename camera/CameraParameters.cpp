@@ -180,12 +180,12 @@ void CameraProperties::Properties::set(const char * const prop, const int value)
 }
 
 const char* CameraProperties::Properties::get(const char * prop) const {
-    return mProperties[mCurrentMode].valueFor(android::String8(prop)).string();
+    return mProperties[mCurrentMode].valueFor(android::String8(prop)).c_str();
 }
 
 int CameraProperties::Properties::getInt(const char * prop) const {
     android::String8 value = mProperties[mCurrentMode].valueFor(android::String8(prop));
-    if (value.isEmpty()) {
+    if (value.empty()) {
         return -1;
     }
     return strtol(value, 0, 0);
@@ -215,8 +215,8 @@ void CameraProperties::Properties::dump() {
 
     for (size_t i = 0; i < mProperties[mCurrentMode].size(); i++) {
         CAMHAL_LOGD("%s = %s",
-                mProperties[mCurrentMode].keyAt(i).string(),
-                mProperties[mCurrentMode].valueAt(i).string());
+                mProperties[mCurrentMode].keyAt(i).c_str(),
+                mProperties[mCurrentMode].valueAt(i).c_str());
     }
 
     CAMHAL_LOGD("--------------------------------");
@@ -224,14 +224,14 @@ void CameraProperties::Properties::dump() {
 
 const char* CameraProperties::Properties::keyAt(const unsigned int index) const {
     if (index < mProperties[mCurrentMode].size()) {
-        return mProperties[mCurrentMode].keyAt(index).string();
+        return mProperties[mCurrentMode].keyAt(index).c_str();
     }
     return NULL;
 }
 
 const char* CameraProperties::Properties::valueAt(const unsigned int index) const {
     if (index < mProperties[mCurrentMode].size()) {
-        return mProperties[mCurrentMode].valueAt(index).string();
+        return mProperties[mCurrentMode].valueAt(index).c_str();
     }
     return NULL;
 }
