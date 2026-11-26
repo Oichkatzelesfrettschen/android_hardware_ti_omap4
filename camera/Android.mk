@@ -105,7 +105,8 @@ TI_CAMERAHAL_COMMON_INCLUDES := \
     external/jhead \
     $(LOCAL_PATH)/../libtiutils \
     $(LOCAL_PATH)/inc \
-    system/media/camera/include
+    system/media/camera/include \
+    $(HARDWARE_TI_OMAP4_BASE)/kernel-headers
 
 ifdef ANDROID_API_JB_OR_LATER
 TI_CAMERAHAL_COMMON_INCLUDES += \

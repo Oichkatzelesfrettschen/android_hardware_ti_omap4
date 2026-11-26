@@ -13,7 +13,8 @@ TI_OMXPROXY_COMMON_INCLUDES := \
 	$(LOCAL_PATH)/../domx \
 	$(LOCAL_PATH)/../domx/omx_rpc/inc \
 	$(LOCAL_PATH)/../domx/plugins/inc/ \
-	frameworks/native/include/media/openmax
+	frameworks/native/include/media/openmax \
+	$(HARDWARE_TI_OMAP4_BASE)/kernel-headers
 
 TI_OMXPROXY_DECODER_INCLUDES := \
 	$(HARDWARE_TI_OMAP4_BASE)/../../libhardware/include \
