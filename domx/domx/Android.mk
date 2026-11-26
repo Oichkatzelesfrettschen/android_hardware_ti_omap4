@@ -24,7 +24,8 @@ LOCAL_C_INCLUDES += \
     system/core/include/cutils \
     $(HARDWARE_TI_OMAP4_BASE)/../../libhardware/include \
     $(LOCAL_PATH)/plugins/inc/ \
-    frameworks/native/include/media/openmax
+    frameworks/native/include/media/openmax \
+    $(HARDWARE_TI_OMAP4_BASE)/kernel-headers
 
 LOCAL_CFLAGS += $(ANDROID_API_CFLAGS)
 LOCAL_CFLAGS += -D_Android -DENABLE_GRALLOC_BUFFERS -DUSE_ENHANCED_PORTRECONFIG -DANDROID_QUIRK_LOCK_BUFFER -DUSE_ION
