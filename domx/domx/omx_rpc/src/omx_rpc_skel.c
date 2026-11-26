@@ -115,7 +115,7 @@ RPC_OMX_ERRORTYPE RPC_SKEL_EmptyBufferDone(void *data)
 	RPC_GETFIELDVALUE(pMsgBody, nPos, nOffset, OMX_U32);
 	RPC_GETFIELDVALUE(pMsgBody, nPos, nFlags, OMX_U32);
 
-	tRPCError =
+	tRPCError = (RPC_OMX_ERRORTYPE)
 	    pCompPrv->proxyEmptyBufferDone(hComp, bufferHdr, nfilledLen,
 	    nOffset, nFlags);
 
@@ -172,7 +172,7 @@ RPC_OMX_ERRORTYPE RPC_SKEL_FillBufferDone(void *data)
 	    OMX_HANDLETYPE);
 	RPC_GETFIELDVALUE(pMsgBody, nPos, pMarkData, OMX_PTR);
 
-	tRPCError =
+	tRPCError = (RPC_OMX_ERRORTYPE)
 	    pCompPrv->proxyFillBufferDone(hComp, bufferHdr, nfilledLen,
 	    nOffset, nFlags, nTimeStamp, hMarkTargetComponent, pMarkData);
 
@@ -229,7 +229,7 @@ RPC_OMX_ERRORTYPE RPC_SKEL_EventHandler(void *data)
 	    hComp, eEvent, nData1, nData2, pEventData);
 	DOMX_DEBUG("Just Before Entering Proxy Event handler call");
 
-	tRPCError =
+	tRPCError = (RPC_OMX_ERRORTYPE)
 	    pCompPrv->proxyEventHandler(hComp, pCompPrv->pILAppData, eEvent,
 	    nData1, nData2, pEventData);
 
