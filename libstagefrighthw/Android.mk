@@ -19,6 +19,7 @@ LOCAL_SHARED_LIBRARIES :=       \
         libdl                   \
 
 LOCAL_MODULE := libstagefrighthw
+LOCAL_HEADER_LIBRARIES := media_plugin_headers libhardware_headers libcutils_headers liblog_headers libutils_headers
 
 LOCAL_VENDOR_MODULE := true
 include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)

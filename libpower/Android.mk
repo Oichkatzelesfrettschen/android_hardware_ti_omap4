@@ -23,6 +23,7 @@ LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SRC_FILES := power.c
 LOCAL_SHARED_LIBRARIES := libcutils liblog
 LOCAL_MODULE_TAGS := optional
+LOCAL_HEADER_LIBRARIES := libhardware_headers libcutils_headers liblog_headers libutils_headers
 
 LOCAL_CFLAGS := -Wall -Werror $(ANDROID_API_CFLAGS)
 
